@@ -1,0 +1,658 @@
+/* ============================================================================
+   hlink.dev — floating macOS terminal landing page
+   Palette: Catppuccin Mocha. Type: Spline Sans Mono.
+   ========================================================================== */
+
+:root {
+  /* TokyoNight Moon (matches Ghostty `theme = TokyoNight Moon`) */
+  --crust: #1b1d2b;
+  --mantle: #1e2030;
+  --base: #222436;
+  --surface0: #2f334d;
+  --surface1: #3b4261;
+  --overlay: #636da6; /* comment */
+  --subtext: #828bb8; /* fg_dark */
+  --text: #c8d3f5; /* fg */
+  --ansi8: #444a73; /* terminal color8 — inactive tmux windows */
+
+  --blue: #82aaff;
+  --lav: #89ddff;
+  --sky: #86e1fc; /* cyan — window border + active window */
+  --teal: #4fd6be;
+  --green: #c3e88d;
+  --yellow: #ffc777;
+  --peach: #ff966c;
+  --maroon: #c53b53;
+  --red: #ff757f;
+  --mauve: #c099ff; /* magenta — session name */
+  --pink: #fca7ea;
+
+  --mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace;
+
+  --menubar-h: 28px;
+  --term-fs: 14px;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html,
+body {
+  height: 100%;
+}
+
+body {
+  font-family: var(--mono);
+  background: var(--crust);
+  color: var(--text);
+  overflow: hidden;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+/* ---- wallpaper: a dark aurora with a faint grain overlay ----------------- */
+.wallpaper {
+  position: fixed;
+  inset: 0;
+  z-index: -2;
+  /* real macOS default (Sonoma) so the window's blur has something to chew on;
+     swap public/osx-lion.jpeg for any image. gradient is the fallback. */
+  background:
+    url("/osx-lion.jpeg") center / cover no-repeat,
+    linear-gradient(160deg, #1b1d2b 0%, #222436 45%, #1b1d2b 100%);
+  background-color: #1b1d2b;
+}
+
+/* ---- faux macOS menubar -------------------------------------------------- */
+.menubar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: var(--menubar-h);
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 14px;
+  font-size: 12.5px;
+  color: rgba(237, 240, 252, 0.92);
+  background: rgba(20, 20, 33, 0.55);
+  backdrop-filter: saturate(160%) blur(18px);
+  -webkit-backdrop-filter: saturate(160%) blur(18px);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  user-select: none;
+  cursor: default;
+}
+.menu-left {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+.apple {
+  width: 14px;
+  height: 14px;
+  color: #eceff4;
+  transform: translateY(-1px);
+}
+.menu-app {
+  font-weight: 700;
+}
+.menu-item {
+  color: rgba(237, 240, 252, 0.78);
+}
+.menu-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.menu-glyph {
+  color: rgba(237, 240, 252, 0.7);
+  font-size: 13px;
+}
+.menu-clock {
+  font-variant-numeric: tabular-nums;
+}
+
+/* ---- stage + floating window -------------------------------------------- */
+.stage {
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: calc(var(--menubar-h) + 4vh) 4vw 6vh;
+}
+
+.window {
+  position: fixed; /* explicit frame via inline left/top/width/height */
+  display: flex;
+  flex-direction: column;
+  border-radius: 11px;
+  overflow: hidden;
+  /* Ghostty: background-opacity = 0.9, big background-blur-radius */
+  background: rgba(34, 36, 54, 0.86);
+  backdrop-filter: saturate(150%) blur(30px);
+  -webkit-backdrop-filter: saturate(150%) blur(30px);
+  border: 1.5px solid var(--sky);
+  box-shadow:
+    0 0 0 1px rgba(134, 225, 252, 0.16),
+    0 0 32px -6px rgba(134, 225, 252, 0.32),
+    0 30px 70px -20px rgba(0, 0, 0, 0.72),
+    0 12px 30px -12px rgba(0, 0, 0, 0.55);
+  /* `backwards` (not `both`) so the entrance doesn't pin transform afterwards,
+     which would block the close/minimize leave transitions */
+  animation: window-in 0.6s cubic-bezier(0.2, 0.8, 0.2, 1) backwards;
+}
+.window:focus,
+.window:focus-visible {
+  outline: none;
+}
+/* grain overlay: dithers away the 8-bit banding ("relief lines") that a big
+   backdrop blur produces over the smooth wallpaper gradients */
+.window::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='220'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  background-size: 180px 180px;
+  opacity: 0.05;
+}
+/* keep window chrome + content above the grain */
+.titlebar,
+.window-body {
+  position: relative;
+  z-index: 1;
+}
+/* fill the screen below the menubar, with a small gap around the edges */
+.window.maximized {
+  position: fixed;
+  inset: calc(var(--menubar-h) + 12px) 12px 12px;
+  width: auto;
+  height: auto;
+}
+/* don't select terminal text while dragging/resizing the window */
+.window.interacting {
+  user-select: none;
+}
+.window.interacting .panes {
+  pointer-events: none;
+}
+
+/* resize handles — thin strips on the edges, squares at the corners, each with
+   the matching native resize cursor */
+.rz {
+  position: absolute;
+  z-index: 5;
+  touch-action: none;
+}
+.rz-n {
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 6px;
+  cursor: ns-resize;
+}
+.rz-s {
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 6px;
+  cursor: ns-resize;
+}
+.rz-e {
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: 6px;
+  cursor: ew-resize;
+}
+.rz-w {
+  top: 0;
+  left: 0;
+  bottom: 0;
+  width: 6px;
+  cursor: ew-resize;
+}
+.rz-ne,
+.rz-nw,
+.rz-se,
+.rz-sw {
+  width: 14px;
+  height: 14px;
+  z-index: 6;
+}
+.rz-ne {
+  top: 0;
+  right: 0;
+  cursor: nesw-resize;
+}
+.rz-nw {
+  top: 0;
+  left: 0;
+  cursor: nwse-resize;
+}
+.rz-se {
+  bottom: 0;
+  right: 0;
+  cursor: nwse-resize;
+}
+.rz-sw {
+  bottom: 0;
+  left: 0;
+  cursor: nesw-resize;
+}
+@keyframes window-in {
+  from {
+    opacity: 0;
+    transform: translateY(14px) scale(0.985);
+  }
+}
+
+/* traffic-light close / minimize: window unmounts (refresh to reopen) */
+.win-close-leave-active {
+  transition:
+    transform 0.22s ease,
+    opacity 0.22s ease;
+}
+.win-close-leave-to {
+  transform: scale(0.93);
+  opacity: 0;
+}
+.win-minimize-leave-active {
+  transition:
+    transform 0.42s cubic-bezier(0.4, 0, 0.7, 1),
+    opacity 0.42s ease;
+  transform-origin: bottom center;
+}
+.win-minimize-leave-to {
+  transform: translateY(70vh) scaleX(0.35) scaleY(0.06);
+  opacity: 0;
+}
+
+/* titlebar */
+.titlebar {
+  position: relative;
+  display: flex;
+  align-items: center;
+  height: 38px;
+  padding: 0 14px;
+  background: linear-gradient(180deg, rgba(59, 66, 97, 0.4), rgba(30, 32, 48, 0.4));
+  border-bottom: 1px solid rgba(0, 0, 0, 0.3);
+  flex: none;
+  cursor: default; /* macOS keeps the arrow on the titlebar, even while dragging */
+  touch-action: none;
+}
+.lights {
+  display: flex;
+  gap: 8px;
+  z-index: 1;
+}
+.light {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  border: none;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: default;
+  box-shadow: 0 0 0 0.5px rgba(0, 0, 0, 0.25) inset;
+}
+.light.red {
+  background: #ff5f57;
+}
+.light.yellow {
+  background: #febc2e;
+}
+.light.green {
+  background: #28c840;
+}
+/* glyphs revealed when hovering anywhere over the cluster, macOS-style */
+.light .glyph {
+  font-family: -apple-system, system-ui, sans-serif;
+  font-size: 11px;
+  line-height: 1;
+  font-weight: 700;
+  opacity: 0;
+  transition: opacity 0.12s ease;
+}
+.lights:hover .glyph {
+  opacity: 1;
+}
+.light.red .glyph {
+  color: #4d0000;
+}
+.light.yellow .glyph {
+  color: #663600;
+}
+.light.green .glyph {
+  color: #003d00;
+}
+.light .glyph svg {
+  display: block;
+}
+.title {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12.5px;
+  color: var(--subtext);
+  letter-spacing: 0.01em;
+  pointer-events: none;
+}
+.lights-spacer {
+  width: 52px;
+}
+
+/* window body holds the panes + the tmux status bar */
+.window-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  background: transparent;
+}
+.panes {
+  position: relative;
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+/* ---- terminal screen ----------------------------------------------------- */
+.term-screen {
+  height: 100%;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 14px 16px 16px;
+  font-size: var(--term-fs);
+  line-height: 1.55;
+  scrollbar-width: thin;
+  scrollbar-color: var(--surface1) transparent;
+}
+.term-screen::-webkit-scrollbar {
+  width: 9px;
+}
+.term-screen::-webkit-scrollbar-thumb {
+  background: var(--surface1);
+  border-radius: 9px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+.term-output,
+.term-inputline {
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+.term-line {
+  animation: line-in 0.22s ease both;
+}
+@keyframes line-in {
+  from {
+    opacity: 0;
+    transform: translateY(3px);
+  }
+}
+
+.term-prompt {
+  white-space: pre;
+}
+
+/* input line + block caret */
+.term-inputline {
+  position: relative;
+}
+.term-typed {
+  white-space: pre-wrap;
+}
+.caret {
+  background: var(--text);
+  color: var(--base);
+  border-radius: 1px;
+  animation: blink 1.05s steps(1) infinite;
+}
+@keyframes blink {
+  50% {
+    background: transparent;
+    color: inherit;
+  }
+}
+/* hollow caret when the terminal isn't focused */
+.term-screen:not(:focus-within) .caret {
+  background: transparent;
+  color: inherit;
+  box-shadow: inset 0 0 0 1px var(--overlay);
+  animation: none;
+}
+/* the real input: invisible, sits on top to capture keys + mobile keyboard */
+.term-capture {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border: 0;
+  margin: 0;
+  padding: 0;
+  background: transparent;
+  color: transparent;
+  caret-color: transparent;
+  font: inherit;
+  font-size: 16px; /* >=16px keeps iOS from zooming on focus */
+  outline: none;
+  resize: none;
+}
+
+/* ---- fastfetch ----------------------------------------------------------- */
+/* one cohesive block: every line is "logo segment + space padding + info",
+   like a real terminal — selects line-by-line and the columns stay aligned */
+.nf-fetch {
+  margin: 0;
+  padding: 0.2em 0 0.7em;
+  white-space: pre;
+  line-height: 1.3;
+}
+.nf-colors {
+  display: inline-flex;
+  vertical-align: middle;
+}
+.nf-colors span {
+  width: 1.15em;
+  height: 0.9em;
+  display: inline-block;
+}
+.nf-colors.bright-row span {
+  filter: brightness(1.25) saturate(0.85);
+}
+
+/* ---- color utility classes (used by the shell output) -------------------- */
+.c-text {
+  color: var(--text);
+}
+.c-dim {
+  color: var(--overlay);
+}
+.c-blue {
+  color: var(--blue);
+}
+.c-lav {
+  color: var(--lav);
+}
+.c-sky {
+  color: var(--sky);
+}
+.c-teal {
+  color: var(--teal);
+}
+.c-green {
+  color: var(--green);
+}
+.c-yellow {
+  color: var(--yellow);
+}
+.c-peach {
+  color: var(--peach);
+}
+.c-red {
+  color: var(--red);
+}
+.c-mauve {
+  color: var(--mauve);
+}
+.c-pink {
+  color: var(--pink);
+}
+.c-maroon {
+  color: var(--maroon);
+}
+.b {
+  font-weight: 700;
+}
+
+/* ---- tmux status bar -----------------------------------------------------
+   Mirrors ~/.config/tmux/tmux.conf: status-position top, justify
+   absolute-centre, status-style bg=default (transparent → morphs into the
+   window, no separator), session magenta, current window cyan bold, inactive
+   color8, prefix indicator `>_`. status-right is empty. */
+.tmux {
+  flex: none;
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  height: 28px;
+  padding: 4px 10px 0;
+  font-size: var(--term-fs);
+  background: transparent;
+  user-select: none;
+  font-variant-numeric: tabular-nums;
+}
+.tmux-left {
+  justify-self: start;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.tmux-wins {
+  justify-self: center;
+  display: flex;
+  gap: 0;
+}
+.tmux-right {
+  justify-self: end;
+}
+.tmux-session {
+  color: var(--mauve);
+  font-weight: 700;
+}
+.tmux-prefix {
+  color: var(--mauve);
+  font-weight: 700;
+}
+.tmux-win {
+  font: inherit;
+  border: 0;
+  background: transparent;
+  color: var(--ansi8);
+  padding: 0 8px;
+  cursor: pointer;
+  transition: color 0.12s ease;
+}
+.tmux-win:hover {
+  color: var(--subtext);
+}
+.tmux-win.active {
+  color: var(--sky);
+  font-weight: 700;
+}
+
+/* ---- about window -------------------------------------------------------- */
+.about {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: left;
+}
+.about-card {
+  max-width: 46ch;
+  display: flex;
+  flex-direction: column;
+  gap: 0.85em;
+}
+.about-mark {
+  color: var(--mauve);
+  font-size: 0.9em;
+  line-height: 1.2;
+  white-space: pre;
+}
+.about-card h1 {
+  font-size: 1.5em;
+  font-weight: 700;
+  color: var(--text);
+  letter-spacing: 0.02em;
+}
+.about-card p {
+  color: var(--subtext);
+  line-height: 1.6;
+}
+.about-card .muted {
+  color: var(--overlay);
+}
+.about-card .hint {
+  margin-top: 0.4em;
+  color: var(--overlay);
+  font-size: 0.92em;
+}
+.about-card .accent {
+  color: var(--green);
+}
+kbd {
+  font: inherit;
+  font-size: 0.88em;
+  background: var(--surface0);
+  color: var(--text);
+  border: 1px solid var(--surface1);
+  border-bottom-width: 2px;
+  border-radius: 5px;
+  padding: 0.05em 0.45em;
+}
+
+/* ---- responsive ---------------------------------------------------------- */
+@media (max-width: 680px) {
+  :root {
+    --term-fs: 13px;
+  }
+  .menubar .menu-item {
+    display: none;
+  }
+  .stage {
+    padding: calc(var(--menubar-h) + 10px) 0 0;
+  }
+  .window {
+    /* size comes from the inline frame (full-screen on mobile); just restyle */
+    border-radius: 12px 12px 0 0;
+    border-bottom: 0;
+  }
+  .rz {
+    display: none; /* no edge-resizing on touch */
+  }
+  .nf-fetch {
+    font-size: 0.72em;
+  }
+}
+
+/* ---- motion preferences -------------------------------------------------- */
+@media (prefers-reduced-motion: reduce) {
+  .window,
+  .term-line {
+    animation: none;
+  }
+  .caret {
+    animation: none;
+  }
+}
