@@ -2,6 +2,8 @@
 // the shell (ls/cd/cat/tree) picks them up for free. Hide easter eggs by giving
 // files a name that starts with "." (revealed with `ls -a`).
 
+import { COMMANDS, manPage } from "./commands";
+
 export interface FSFile {
   type: "file";
   name: string;
@@ -28,7 +30,15 @@ const file = (name: string, content: string): FSFile => ({ type: "file", name, c
 // what `~` expands to.
 export const HOME = ["Users", "josef"];
 
+// /bin is generated from the command registry so it's always in step with
+// what the shell can actually run. `cat /bin/<name>` reads the man-blurb.
+const bin = dir(
+  "bin",
+  COMMANDS.map((spec) => file(spec.name, manPage(spec))),
+);
+
 export const root: FSDir = dir("/", [
+  bin,
   dir("Users", [
     dir("josef", [
       dir("project1"),

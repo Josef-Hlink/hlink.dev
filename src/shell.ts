@@ -2,13 +2,15 @@
 // filesystem in fs.ts. Pure TypeScript, no framework — the Vue terminal calls
 // `run()` and renders the returned HTML string.
 //
-// To add a command: add a `case` in run(). To add easter eggs: drop nodes into
-// fs.ts and they're reachable via ls/cd/cat/tree automatically.
+// To add a command: add a spec to COMMANDS in commands.ts, then a matching
+// `case` in run(). To add easter eggs: drop nodes into fs.ts and they're
+// reachable via ls/cd/cat/tree automatically.
 
 import { root, HOME, type FSDir, type FSNode } from "./fs";
 import { esc, c } from "./util";
 import { fastfetch } from "./fastfetch";
 import { joshVersion, joshNoop } from "./josh";
+import { COMMANDS, commandIndex, manPage, DEFAULT_ALIASES, type CommandSpec } from "./commands";
 
 export interface RunResult {
   /** Trusted/escaped HTML to append to the terminal. */
@@ -20,6 +22,12 @@ export interface RunResult {
 export class Shell {
   cwd: string[] = [...HOME];
   private prev: string[] = [...HOME];
+  /** name/alias → canonical spec, used to resolve and look up commands. */
+  private cmds = commandIndex();
+  /** aliases that expand to a full command line (name → value). Seeded with the
+   *  built-in defaults; `alias name=value` adds more for the session. A reload
+   *  resets to the defaults, so there's no need for an unalias. */
+  private aliases = new Map<string, string>(Object.entries(DEFAULT_ALIASES));
 
   /** Pretty path for the prompt: ~ inside HOME, absolute otherwise. */
   pathDisplay(path: string[] = this.cwd): string {
@@ -87,35 +95,54 @@ export class Shell {
   // --- command dispatch -----------------------------------------------------
 
   run(input: string): RunResult {
-    const line = input.trim();
-    if (!line) return { html: "" };
+    const raw = input.trim();
+    if (!raw) return { html: "" };
 
+    // A leading user alias expands once (single-pass, so `alias ls='ls -la'`
+    // is safe and can't loop). Built-in name aliases are resolved below.
+    const line = this.expandAlias(raw);
     const parts = line.split(/\s+/);
     const cmd = parts[0];
     const args = parts.slice(1);
+    // raw tail after the command word, for commands that parse it themselves
+    const rest = line.slice(cmd.length).trim();
 
-    switch (cmd) {
+    // Resolve aliases (ff → fastfetch, ll → ls, …) up front, so each command
+    // needs only one case below and `which`/help stay authoritative.
+    const spec = this.cmds.get(cmd);
+    if (!spec) return { html: this.notFound(cmd) };
+
+    // -h anywhere (incl. clusters like -lh) or --help prints the man-blurb —
+    // the same text as `cat /bin/<command>`.
+    const shortChars = args.filter((a) => /^-[^-]/.test(a)).flatMap((a) => [...a.slice(1)]);
+    if (args.includes("--help") || shortChars.includes("h")) {
+      return { html: c(esc(manPage(spec).replace(/\n+$/, "")), "text") };
+    }
+
+    // reject unknown flags, the way a real tool would (rawArgs commands skip this)
+    const bad = this.badOption(spec, args);
+    if (bad) return { html: this.optionError(spec, bad) };
+
+    switch (spec.name) {
       case "help":
         return { html: this.help() };
       case "ls":
-      case "ll":
         return { html: this.ls(args) };
       case "cd":
         return { html: this.cd(args[0]) };
       case "pwd":
         return { html: c(esc("/" + this.cwd.join("/")), "text") };
       case "cat":
-      case "less":
-      case "more":
         return { html: this.cat(args.find((a) => !a.startsWith("-"))) };
       case "tree":
         return { html: this.tree(args.find((a) => !a.startsWith("-"))) };
+      case "which":
+        return { html: this.which(args) };
+      case "alias":
+        return { html: this.alias(rest) };
       case "clear":
         return { html: "", clear: true };
       case "fastfetch":
-      case "ff":
-      case "neofetch":
-      case "fetch":
         return { html: fastfetch() };
       case "josh":
         return {
@@ -131,14 +158,6 @@ export class Shell {
         return { html: c(esc(new Date().toString()), "text") };
       case "echo":
         return { html: c(esc(args.join(" ")), "text") };
-      case "sudo":
-        return { html: c("this incident will be reported.", "red") };
-      case "exit":
-      case "logout":
-      case "quit":
-        return { html: c("there is no escape. (it's a webpage.)", "yellow") };
-      case "rm":
-        return { html: c("this filesystem is read-only. you can't rm your way out of here.", "yellow") };
       default:
         return { html: this.notFound(cmd) };
     }
@@ -174,29 +193,106 @@ export class Shell {
     ].join("\n");
   }
 
+  private which(args: string[]): string {
+    if (!args.length) return c(esc("usage: which <command>..."), "red");
+    return args
+      .map((name) => {
+        // an alias resolves to arbitrary text; a command resolves to its binary
+        const expansion = this.aliases.get(name);
+        if (expansion !== undefined)
+          return c(esc(name), "text") + c(": aliased to ", "dim") + c(esc(expansion), "green", true);
+        const spec = this.cmds.get(name);
+        return spec ? c(esc("/bin/" + spec.name), "blue", true) : c(`${esc(name)} not found`, "red");
+      })
+      .join("\n");
+  }
+
+  /** Replace a leading expansion alias with its value, once. Keeps the rest of
+   *  the line (args) intact: `ll` + " /bin" → `ls -l` + " /bin". */
+  private expandAlias(line: string): string {
+    const first = line.split(/\s+/)[0];
+    const value = this.aliases.get(first);
+    return value === undefined ? line : value + line.slice(first.length);
+  }
+
+  private alias(rest: string): string {
+    // zsh-style: quote the value only when it has spaces
+    const fmt = (v: string) => (/\s/.test(v) ? `'${v}'` : v);
+    const row = (a: string, value: string) =>
+      c(esc(a), "text") + c("=", "dim") + c(esc(fmt(value)), "green", true);
+
+    // define: name=value  (value may be quoted to preserve spaces)
+    const eq = rest.indexOf("=");
+    if (eq > 0) {
+      const name = rest.slice(0, eq).trim();
+      const value = rest
+        .slice(eq + 1)
+        .trim()
+        .replace(/^(['"])([\s\S]*)\1$/, "$2"); // strip one layer of matching quotes
+      if (!/^[A-Za-z][\w-]*$/.test(name)) return c(`alias: ${esc(name)}: bad alias name`, "red");
+      if (!value) return c(`alias: ${esc(name)}=: missing value`, "red");
+      this.aliases.set(name, value);
+      return ""; // shells say nothing on a successful definition
+    }
+
+    // look up specific names
+    if (rest) {
+      return rest
+        .split(/\s+/)
+        .map((name) => {
+          const value = this.aliases.get(name);
+          return value === undefined ? c(`alias: ${esc(name)}: not found`, "red") : row(name, value);
+        })
+        .join("\n");
+    }
+
+    // no args → every alias, sorted by name
+    return [...this.aliases]
+      .sort((x, y) => x[0].localeCompare(y[0]))
+      .map(([a, v]) => row(a, v))
+      .join("\n");
+  }
+
   private ls(args: string[]): string {
-    const all = args.some((a) => /^-\w*a/.test(a));
+    const flags = args.filter((a) => a.startsWith("-")).join("");
+    const all = flags.includes("a"); // -a: include dotfiles
+    const long = flags.includes("l"); // -l: one per line, with metadata
     const pathArg = args.find((a) => !a.startsWith("-"));
     // no path → current directory (not HOME)
-    const node = this.resolve(pathArg === undefined ? this.cwd : this.toAbs(pathArg));
+    const target = pathArg === undefined ? this.cwd : this.toAbs(pathArg);
+    const node = this.resolve(target);
 
     if (!node) return c(`ls: ${esc(pathArg ?? "")}: No such file or directory`, "red");
     if (node.type === "file") return c(esc(node.name), "text");
 
+    // everything in /bin is an "executable" — colour it like one
+    const inBin = target.length === 1 && target[0] === "bin";
     const entries = Object.values(node.children)
       .filter((n) => all || !n.name.startsWith("."))
       .sort((a, b) => a.name.localeCompare(b.name));
-
     if (!entries.length) return "";
-    return entries
-      .map((n) =>
-        n.type === "dir"
-          ? c(esc(n.name) + "/", "blue", true)
+
+    const nameCell = (n: FSNode) =>
+      n.type === "dir"
+        ? c(esc(n.name) + "/", "blue", true)
+        : inBin
+          ? c(esc(n.name), "green", true)
           : n.name.startsWith(".")
             ? c(esc(n.name), "dim")
-            : c(esc(n.name), "text"),
-      )
-      .join("   ");
+            : c(esc(n.name), "text");
+
+    if (!long) return entries.map(nameCell).join("   ");
+
+    // long listing: mode, owner, size, name — one entry per line
+    const size = (n: FSNode) => (n.type === "file" ? String(n.content.length) : "-");
+    const sizeW = Math.max(...entries.map((n) => size(n).length));
+    return entries
+      .map((n) => {
+        const mode = n.type === "dir" ? "drwxr-xr-x" : inBin ? "-rwxr-xr-x" : "-rw-r--r--";
+        const meta = `${mode}  josef  staff  ${size(n).padStart(sizeW)}  `;
+        return c(esc(meta), "dim") + nameCell(n);
+      })
+      .join("\n");
   }
 
   private cd(arg: string | undefined): string {
@@ -243,6 +339,31 @@ export class Shell {
       }
     });
     return out;
+  }
+
+  /** First unrecognised option in args, or null. Short clusters are checked
+   *  per character (returns the bad letter); long options whole (returns the
+   *  whole "--opt"). rawArgs commands accept anything. */
+  private badOption(spec: CommandSpec, args: string[]): string | null {
+    if (spec.rawArgs) return null;
+    const short = spec.flags ?? "";
+    const long = new Set(spec.longFlags ?? []);
+    for (const a of args) {
+      if (!a.startsWith("-") || a === "-" || a === "--") continue; // -, -- aren't flags
+      if (a.startsWith("--")) {
+        if (!long.has(a.slice(2))) return a;
+      } else {
+        for (const ch of a.slice(1)) if (!short.includes(ch)) return ch;
+      }
+    }
+    return null;
+  }
+
+  private optionError(spec: CommandSpec, bad: string): string {
+    const msg = bad.startsWith("--")
+      ? `${spec.name}: unrecognized option '${bad}'`
+      : `${spec.name}: illegal option -- ${bad}`;
+    return c(esc(msg), "red") + "\n" + c(esc("usage: " + spec.usage), "dim");
   }
 
   private notFound(cmd: string): string {
