@@ -19,7 +19,7 @@
       packages = forAllSystems (pkgs: rec {
         hlink = pkgs.buildNpmPackage {
           pname = "hlink-dev";
-          version = "0.1.0";
+          version = "0.2.0";
           src = ./.;
 
           # Refresh after package-lock.json changes:
