@@ -166,30 +166,36 @@ export class Shell {
   // --- commands -------------------------------------------------------------
 
   private help(): string {
-    const row = (name: string, desc: string) =>
-      "  " + c(esc(name.padEnd(11)), "green", true) + c(esc(desc), "dim");
+    // fastfetch is advertised by its short alias here
+    const label = (name: string) => (name === "fastfetch" ? "fetch" : name);
+    const essentials = COMMANDS.filter((s) => s.essential);
+    const w = Math.max(...essentials.map((s) => label(s.name).length)) + 2;
+    const rows = essentials.map(
+      (s) => "  " + c(esc(label(s.name).padEnd(w)), "green", true) + c(esc(s.summary), "dim"),
+    );
     return [
-      c("available commands", "lav", true),
-      row("ls", "list the current directory  (ls -a shows hidden files)"),
-      row("cd", "change directory  (cd .. , cd ~ , cd -)"),
-      row("pwd", "print the working directory"),
-      row("cat", "print a file's contents"),
-      row("tree", "show the directory tree"),
-      row("ff", "(fastfetch) unix larp"),
-      row("josh", "josef's own shell"),
-      row("whoami", "in case you forget"),
-      row("date", "the current time"),
-      row("echo", "say something back"),
-      row("clear", "clear the screen  (or Ctrl-L)"),
-      row("help", "this"),
+      c("all ", "dim") +
+        c("commands", "green", true) +
+        c(" live in ", "dim") +
+        c("/bin", "blue", true) +
+        c(", try ", "dim") +
+        c("ls /bin", "green", true) +
+        c(" to see all of them", "dim"),
+      c("for help on what a command does, try ", "dim") +
+        c(esc("<cmd> -h"), "green", true) +
+        c(", or ", "dim") +
+        c(esc("cat /bin/<cmd>"), "green", true),
+      c("here's a few commands to get you started", "dim"),
+      ...rows,
       "",
-      c("  tip: ", "dim") +
-        c("Ctrl-Space", "peach", true) +
+      c("tip: ", "dim") +
+        c("Ctrl-Space", "mauve", true) +
         c(" then ", "dim") +
-        c("1/2/n/p", "peach", true) +
-        c(" switches tmux windows (the ", "dim") +
+        c("1/2/n/p", "mauve", true) +
+        c(" switches tmux windows.", "dim"),
+      c("(a ", "dim") +
         c(">_", "mauve", true) +
-        c(" up top means the prefix is armed).", "dim"),
+        c(" will appear next to the session name when the prefix is armed)", "dim"),
     ].join("\n");
   }
 
