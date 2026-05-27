@@ -33,6 +33,62 @@
   --term-fs: 14px;
 }
 
+/* light theme — TokyoNight Day, flipped on by the menubar ◑ toggle. Overrides
+   the palette tokens (which cascade everywhere) plus the bits of chrome that
+   use hardcoded rgba rather than tokens. */
+:root[data-theme="light"] {
+  --crust: #c4c8da;
+  --mantle: #d0d5e3;
+  --base: #e1e2e7;
+  --surface0: #cbd0e3;
+  --surface1: #a8aecb;
+  --overlay: #7a82ad; /* comment / dim text */
+  --subtext: #6172b0; /* fg_dark */
+  --text: #3760bf; /* fg */
+  --ansi8: #a1a6c5; /* inactive tmux windows */
+
+  --blue: #2e7de9;
+  --lav: #2e7de9;
+  --sky: #007197; /* cyan — window border + active window */
+  --teal: #118c74;
+  --green: #587539;
+  --yellow: #8c6c3e;
+  --peach: #b15c00;
+  --maroon: #c64343;
+  --red: #f52a65;
+  --mauve: #9854f1; /* magenta — session name */
+  --pink: #d20065;
+}
+[data-theme="light"] .menubar {
+  color: rgba(40, 52, 96, 0.92);
+  background: rgba(226, 228, 236, 0.55);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+}
+[data-theme="light"] .apple {
+  color: #2a2e42;
+}
+[data-theme="light"] .menu-item {
+  color: rgba(40, 52, 96, 0.72);
+}
+[data-theme="light"] .menu-glyph {
+  color: rgba(40, 52, 96, 0.7);
+}
+[data-theme="light"] .menu-glyph:hover {
+  color: rgba(40, 52, 96, 1);
+}
+[data-theme="light"] .window {
+  background: rgba(226, 228, 236, 0.82);
+  box-shadow:
+    0 0 0 1px rgba(0, 113, 151, 0.14),
+    0 0 32px -8px rgba(0, 113, 151, 0.18),
+    0 30px 70px -22px rgba(40, 50, 90, 0.28),
+    0 12px 30px -14px rgba(40, 50, 90, 0.2);
+}
+[data-theme="light"] .titlebar {
+  background: linear-gradient(180deg, rgba(244, 246, 251, 0.7), rgba(214, 219, 232, 0.6));
+  border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+}
+
 * {
   box-sizing: border-box;
   margin: 0;
@@ -112,6 +168,16 @@ body {
 .menu-glyph {
   color: rgba(237, 240, 252, 0.7);
   font-size: 13px;
+  background: none;
+  border: 0;
+  padding: 0;
+  font-family: inherit;
+  line-height: 1;
+  cursor: pointer;
+  transition: color 0.12s ease;
+}
+.menu-glyph:hover {
+  color: rgba(237, 240, 252, 1);
 }
 .menu-clock {
   font-variant-numeric: tabular-nums;

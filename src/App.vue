@@ -2,7 +2,7 @@
 // The "desktop": wallpaper + faux macOS menubar + one floating terminal window
 // whose body hosts the tmux windows. Owns the cross-cutting state: which tmux
 // window is active, the live clock, the Ctrl-Space prefix, and window dragging.
-import { ref, onMounted, onUnmounted, nextTick } from "vue";
+import { ref, watchEffect, onMounted, onUnmounted, nextTick } from "vue";
 import MenuBar from "./components/MenuBar.vue";
 import TmuxStatus from "./components/TmuxStatus.vue";
 import ShellWindow from "./components/ShellWindow.vue";
@@ -11,6 +11,17 @@ import ShellWindow from "./components/ShellWindow.vue";
 // keyboard, so input-less windows are out). Window 2 just boots by cat-ing the
 // about file. To add a window: append a name + a <ShellWindow> in the template.
 const windows = ["josh", "josh"];
+
+// Theme: the menubar's ◑ toggles dark/light, persisted across visits. An inline
+// script in index.html applies the stored value before paint; we keep it synced.
+type Theme = "dark" | "light";
+const theme = ref<Theme>(localStorage.getItem("hlink-theme") === "light" ? "light" : "dark");
+watchEffect(() => {
+  document.documentElement.dataset.theme = theme.value;
+  document.documentElement.style.colorScheme = theme.value;
+  localStorage.setItem("hlink-theme", theme.value);
+});
+const toggleTheme = () => (theme.value = theme.value === "dark" ? "light" : "dark");
 
 const active = ref(0);
 const prefix = ref(false);
@@ -176,7 +187,7 @@ onUnmounted(() => {
 <template>
   <div class="wallpaper" aria-hidden="true"></div>
 
-  <MenuBar :now="now" />
+  <MenuBar :now="now" :theme="theme" @toggle-theme="toggleTheme" />
 
   <main class="stage">
     <Transition :name="'win-' + leaveKind">

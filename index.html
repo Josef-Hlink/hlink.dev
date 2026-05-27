@@ -5,7 +5,16 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover" />
     <title>josef hamelink — hlink.dev</title>
     <meta name="description" content="josef hamelink's corner of the internet. poke around the terminal." />
-    <meta name="color-scheme" content="dark" />
+    <meta name="color-scheme" content="dark light" />
+    <script>
+      // set the theme before first paint so returning light-mode visitors
+      // don't get a flash of dark
+      (function () {
+        var t = localStorage.getItem("hlink-theme") === "light" ? "light" : "dark";
+        document.documentElement.dataset.theme = t;
+        document.documentElement.style.colorScheme = t;
+      })();
+    </script>
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='7' fill='%231e1e2e'/><text x='5' y='23' font-family='monospace' font-size='17' fill='%23a6e3a1'>%3E_</text></svg>" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />

@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import { computed } from "vue";
 
-const props = defineProps<{ now: Date }>();
+const props = defineProps<{ now: Date; theme: "dark" | "light" }>();
+const emit = defineEmits<{ "toggle-theme": [] }>();
 
 const clock = computed(() => {
   const d = props.now;
@@ -29,7 +30,14 @@ const clock = computed(() => {
       <span class="menu-item">Help</span>
     </div>
     <div class="menu-right">
-      <span class="menu-glyph" aria-hidden="true">◑</span>
+      <button
+        class="menu-glyph"
+        type="button"
+        :aria-label="`switch to ${props.theme === 'dark' ? 'light' : 'dark'} mode`"
+        @click="emit('toggle-theme')"
+      >
+        {{ props.theme === "dark" ? "◑" : "◐" }}
+      </button>
       <span class="menu-clock">{{ clock }}</span>
     </div>
   </header>
