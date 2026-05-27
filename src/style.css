@@ -171,7 +171,7 @@ body {
 /* fill the screen below the menubar, with a small gap around the edges */
 .window.maximized {
   position: fixed;
-  inset: calc(var(--menubar-h) + 12px) 12px 12px;
+  inset: calc(var(--menubar-h) + 5px) 5px 5px;
   width: auto;
   height: auto;
 }
@@ -286,6 +286,7 @@ body {
   flex: none;
   cursor: default; /* macOS keeps the arrow on the titlebar, even while dragging */
   touch-action: none;
+  user-select: none;
 }
 .lights {
   display: flex;
@@ -333,6 +334,12 @@ body {
 }
 .light.green .glyph {
   color: #003d00;
+}
+/* the × and − are text glyphs and sit a touch low/left in their box; the green
+   ⃫ is an SVG and centers on its own */
+.light.red .glyph,
+.light.yellow .glyph {
+  transform: translate(0.25px, -0.5px);
 }
 .light .glyph svg {
   display: block;
