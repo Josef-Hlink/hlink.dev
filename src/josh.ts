@@ -4,7 +4,7 @@
 
 import { c } from "./util";
 
-export const JOSH_VERSION = "0.2.0";
+export const JOSH_VERSION = "0.3.0";
 
 interface Release {
   version: string;
@@ -14,6 +14,14 @@ interface Release {
 
 // newest first
 export const CHANGELOG: Release[] = [
+  {
+    version: "0.3.0",
+    date: "2026-06-10",
+    notes: [
+      "mail: send josef a message right from the terminal",
+      "compose is an alias for mail",
+    ],
+  },
   {
     version: "0.2.0",
     date: "2026-05-27",
