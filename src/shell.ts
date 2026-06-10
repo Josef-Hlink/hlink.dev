@@ -17,6 +17,9 @@ export interface RunResult {
   html: string;
   /** If true, wipe the scrollback instead of appending. */
   clear?: boolean;
+  /** If true, the terminal should enter the interactive `mail` compose flow.
+   *  run() stays pure/sync; the async send + multi-step prompts live in the UI. */
+  startCompose?: boolean;
 }
 
 export class Shell {
@@ -144,6 +147,15 @@ export class Shell {
         return { html: "", clear: true };
       case "fastfetch":
         return { html: fastfetch() };
+      case "mail":
+        return {
+          html:
+            c("compose a message", "text") +
+            c("  (", "dim") +
+            c("Ctrl-C", "mauve", true) +
+            c(" to abort)", "dim"),
+          startCompose: true,
+        };
       case "josh":
         return {
           html: args.some((a) => a === "-v" || a === "-V" || a === "--version")

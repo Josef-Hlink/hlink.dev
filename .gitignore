@@ -4,3 +4,6 @@ dist
 .DS_Store
 result
 result-*
+.env
+.env.*
+!.env.example
