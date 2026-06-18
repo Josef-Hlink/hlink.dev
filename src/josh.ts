@@ -4,7 +4,7 @@
 
 import { c } from "./util";
 
-export const JOSH_VERSION = "0.3.0";
+export const JOSH_VERSION = "0.4.0";
 
 interface Release {
   version: string;
@@ -14,6 +14,14 @@ interface Release {
 
 // newest first
 export const CHANGELOG: Release[] = [
+  {
+    version: "0.4.0",
+    date: "2026-06-19",
+    notes: [
+      "new ~/projects/twin — a little showcase; cd in and cat the README",
+      "cat turns URLs into clickable links",
+    ],
+  },
   {
     version: "0.3.0",
     date: "2026-06-10",
