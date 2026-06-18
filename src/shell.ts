@@ -7,7 +7,7 @@
 // reachable via ls/cd/cat/tree automatically.
 
 import { root, HOME, type FSDir, type FSNode } from "./fs";
-import { esc, c } from "./util";
+import { esc, c, linkify } from "./util";
 import { fastfetch } from "./fastfetch";
 import { joshVersion, joshNoop } from "./josh";
 import { COMMANDS, commandIndex, manPage, DEFAULT_ALIASES, type CommandSpec } from "./commands";
@@ -328,7 +328,8 @@ export class Shell {
     const node = this.resolve(this.toAbs(arg));
     if (!node) return c(`cat: ${esc(arg)}: No such file or directory`, "red");
     if (node.type === "dir") return c(`cat: ${esc(arg)}: Is a directory`, "red");
-    return c(esc(node.content.replace(/\n+$/, "")), "text");
+    // linkify (not esc) so a URL in a file renders as a clickable link
+    return c(linkify(node.content.replace(/\n+$/, "")), "text");
   }
 
   private tree(arg: string | undefined): string {

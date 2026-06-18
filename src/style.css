@@ -588,6 +588,17 @@ body {
   font-weight: 700;
 }
 
+/* links inside terminal output (e.g. a URL you `cat`) */
+.term-link {
+  color: var(--sky);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  text-decoration-thickness: 1px;
+}
+.term-link:hover {
+  color: var(--lav);
+}
+
 /* ---- tmux status bar -----------------------------------------------------
    Mirrors ~/.config/tmux/tmux.conf: status-position top, justify
    absolute-centre, status-style bg=default (transparent → morphs into the

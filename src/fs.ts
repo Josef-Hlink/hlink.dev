@@ -4,6 +4,12 @@
 
 import { COMMANDS, manPage } from "./commands";
 
+// Page content lives as real files under content/ so it's easy to write and
+// maintain. Vite's `?raw` inlines each one as a string at build time. Add a
+// project by dropping files in content/<name>/ and wiring them up below.
+import twinReadme from "./content/twin/README.md?raw";
+import twinUrl from "./content/twin/url?raw";
+
 export interface FSFile {
   type: "file";
   name: string;
@@ -41,8 +47,13 @@ export const root: FSDir = dir("/", [
   bin,
   dir("Users", [
     dir("josef", [
-      dir("project1"),
-      dir("project2"),
+      // real projects live here now; `cat README`, then `cat url` for the link
+      dir("projects", [
+        dir("twin", [
+          file("README", twinReadme),
+          file("url", twinUrl),
+        ]),
+      ]),
       // shown in window 2 (which boots with `cat about.txt`)
       file(
         "about.txt",
