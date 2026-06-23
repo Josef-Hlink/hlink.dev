@@ -10,6 +10,8 @@ import vue from "@vitejs/plugin-vue";
 export default defineConfig({
   plugins: [vue()],
   server: {
+    // 14 Aug — my birthday. Pinned so it never collides with another Vite app.
+    port: 1408,
     proxy: {
       "/api": "http://localhost:8788",
     },
