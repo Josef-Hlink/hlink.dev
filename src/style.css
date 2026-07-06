@@ -30,6 +30,7 @@
   --mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace;
 
   --menubar-h: 28px;
+  --dock-clear: 74px; /* room the dock needs at the bottom (matches DOCK_CLEAR) */
   --term-fs: 14px;
 }
 
@@ -234,12 +235,25 @@ body {
   position: relative;
   z-index: 1;
 }
-/* fill the screen below the menubar, with a small gap around the edges */
+/* fill the screen below the menubar, stopping above the dock */
 .window.maximized {
   position: fixed;
-  inset: calc(var(--menubar-h) + 5px) 5px 5px;
+  inset: calc(var(--menubar-h) + 5px) 5px var(--dock-clear);
   width: auto;
   height: auto;
+}
+/* unfocused windows step back: quiet border, softer glow */
+.window:not(.focused) {
+  border-color: var(--surface1);
+  box-shadow:
+    0 0 0 1px rgba(0, 0, 0, 0.18),
+    0 24px 55px -20px rgba(0, 0, 0, 0.55),
+    0 10px 25px -12px rgba(0, 0, 0, 0.4);
+}
+[data-theme="light"] .window:not(.focused) {
+  box-shadow:
+    0 24px 55px -22px rgba(40, 50, 90, 0.24),
+    0 10px 25px -14px rgba(40, 50, 90, 0.18);
 }
 /* don't select terminal text while dragging/resizing the window */
 .window.interacting {
@@ -336,6 +350,17 @@ body {
   transform-origin: bottom center;
 }
 .win-minimize-leave-to {
+  transform: translateY(70vh) scaleX(0.35) scaleY(0.06);
+  opacity: 0;
+}
+/* restoring from the dock plays the minimize in reverse */
+.win-minimize-enter-active {
+  transition:
+    transform 0.42s cubic-bezier(0.3, 0, 0.6, 1),
+    opacity 0.42s ease;
+  transform-origin: bottom center;
+}
+.win-minimize-enter-from {
   transform: translateY(70vh) scaleX(0.35) scaleY(0.06);
   opacity: 0;
 }
@@ -706,6 +731,364 @@ kbd {
   padding: 0.05em 0.45em;
 }
 
+/* ---- dock ----------------------------------------------------------------
+   Fixed bottom-center frosted bar, above the windows (z 1–2) and below the
+   menubar (z 10). Hover = per-icon lift; no neighbor magnification. */
+.dock {
+  position: fixed;
+  bottom: 10px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 9;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 10px;
+  border-radius: 20px;
+  background: rgba(34, 36, 54, 0.55);
+  backdrop-filter: saturate(150%) blur(30px);
+  -webkit-backdrop-filter: saturate(150%) blur(30px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 12px 30px -12px rgba(0, 0, 0, 0.55);
+  user-select: none;
+}
+.dock-item {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  border: 0;
+  background: transparent;
+  padding: 2px;
+  cursor: pointer;
+  transition: transform 0.15s ease;
+}
+.dock-item:hover {
+  transform: scale(1.15) translateY(-4px);
+}
+.dock-item.disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+.dock-svg {
+  display: block;
+  width: 36px;
+  height: 36px;
+}
+/* label bubble above the icon, macOS-style */
+.dock-tip {
+  position: absolute;
+  bottom: calc(100% + 10px);
+  left: 50%;
+  transform: translateX(-50%);
+  white-space: nowrap;
+  font-size: 11.5px;
+  color: var(--text);
+  background: rgba(34, 36, 54, 0.92);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  padding: 3px 9px;
+  border-radius: 6px;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.12s ease;
+}
+.dock-item:hover .dock-tip {
+  opacity: 1;
+}
+/* running-app indicator */
+.dock-dot {
+  position: absolute;
+  bottom: -5px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: var(--text);
+  opacity: 0.85;
+}
+.dock-sep {
+  width: 1px;
+  align-self: stretch;
+  margin: 3px 5px;
+  background: rgba(255, 255, 255, 0.14);
+}
+@keyframes trash-wobble {
+  20% {
+    transform: rotate(-9deg);
+  }
+  40% {
+    transform: rotate(8deg);
+  }
+  60% {
+    transform: rotate(-5deg);
+  }
+  80% {
+    transform: rotate(3deg);
+  }
+}
+.dock-item.wobble .dock-svg {
+  animation: trash-wobble 0.5s ease;
+}
+[data-theme="light"] .dock {
+  background: rgba(226, 228, 236, 0.6);
+  border-color: rgba(0, 0, 0, 0.08);
+  box-shadow: 0 12px 30px -14px rgba(40, 50, 90, 0.3);
+}
+[data-theme="light"] .dock-tip {
+  background: rgba(244, 246, 251, 0.95);
+  border-color: rgba(0, 0, 0, 0.08);
+}
+[data-theme="light"] .dock-sep {
+  background: rgba(0, 0, 0, 0.15);
+}
+
+/* ---- finder ---------------------------------------------------------------
+   Unified toolbar (in the titlebar) + sidebar + icon grid + status bar. */
+.finder-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-left: 14px;
+  min-width: 0;
+}
+.finder-nav {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 22px;
+  border: 0;
+  border-radius: 5px;
+  background: transparent;
+  color: var(--subtext);
+  cursor: pointer;
+}
+.finder-nav:hover:not(:disabled) {
+  background: var(--surface0);
+  color: var(--text);
+}
+.finder-nav:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+.finder-title {
+  margin-left: 8px;
+  font-size: 12.5px;
+  font-weight: 700;
+  color: var(--text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.finder-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+}
+.finder-side {
+  flex: none;
+  width: 150px;
+  padding: 10px 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  background: rgba(30, 32, 48, 0.45);
+  border-right: 1px solid rgba(255, 255, 255, 0.06);
+  overflow-y: auto;
+}
+.finder-side-head {
+  font-size: 10.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--overlay);
+  padding: 2px 8px 6px;
+}
+.finder-fav {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 4px 8px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  font: inherit;
+  font-size: 12.5px;
+  color: var(--subtext);
+  cursor: pointer;
+  text-align: left;
+}
+.finder-fav svg {
+  flex: none;
+  color: var(--blue);
+}
+.finder-fav:hover {
+  background: var(--surface0);
+}
+.finder-fav.active {
+  background: var(--surface0);
+  color: var(--text);
+}
+.finder-main {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+.finder-grid {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(86px, 1fr));
+  grid-auto-rows: max-content;
+  align-content: start;
+  gap: 6px;
+  padding: 14px;
+  scrollbar-width: thin;
+  scrollbar-color: var(--surface1) transparent;
+}
+.finder-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  padding: 8px 4px 6px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  font: inherit;
+  cursor: default;
+}
+.finder-item.selected {
+  background: var(--surface0);
+}
+.finder-icon {
+  width: 44px;
+  height: 44px;
+}
+.finder-name {
+  max-width: 100%;
+  padding: 1px 6px;
+  border-radius: 4px;
+  font-size: 11.5px;
+  color: var(--text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.finder-item.selected .finder-name {
+  background: var(--blue);
+  color: var(--crust);
+}
+[data-theme="light"] .finder-item.selected .finder-name {
+  color: #fff;
+}
+.finder-status {
+  flex: none;
+  padding: 4px 12px;
+  font-size: 11px;
+  color: var(--overlay);
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  text-align: center;
+}
+[data-theme="light"] .finder-side {
+  background: rgba(214, 219, 232, 0.5);
+  border-right-color: rgba(0, 0, 0, 0.08);
+}
+[data-theme="light"] .finder-status {
+  border-top-color: rgba(0, 0, 0, 0.08);
+}
+
+/* ---- quick look -----------------------------------------------------------
+   Teleported to <body>: backdrop above everything, file content rendered with
+   the same classes as `cat` output. */
+.ql-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 30;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: rgba(0, 0, 0, 0.25);
+}
+.ql-panel {
+  width: min(640px, 88vw);
+  max-height: min(70vh, 560px);
+  display: flex;
+  flex-direction: column;
+  border-radius: 12px;
+  overflow: hidden;
+  background: rgba(34, 36, 54, 0.92);
+  backdrop-filter: saturate(150%) blur(30px);
+  -webkit-backdrop-filter: saturate(150%) blur(30px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 30px 70px -20px rgba(0, 0, 0, 0.72);
+}
+.ql-head {
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 12px;
+  font-size: 12.5px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+}
+.ql-name {
+  font-weight: 700;
+  color: var(--text);
+}
+.ql-close {
+  border: 0;
+  background: transparent;
+  color: var(--overlay);
+  font: inherit;
+  font-size: 16px;
+  line-height: 1;
+  cursor: pointer;
+}
+.ql-close:hover {
+  color: var(--text);
+}
+.ql-body {
+  overflow-y: auto;
+  padding: 14px 16px 16px;
+  font-size: var(--term-fs);
+  line-height: 1.55;
+  white-space: pre-wrap;
+  word-break: break-word;
+  scrollbar-width: thin;
+  scrollbar-color: var(--surface1) transparent;
+}
+.ql-enter-active,
+.ql-leave-active {
+  transition: opacity 0.18s ease;
+}
+.ql-enter-active .ql-panel,
+.ql-leave-active .ql-panel {
+  transition: transform 0.18s ease;
+}
+.ql-enter-from,
+.ql-leave-to {
+  opacity: 0;
+}
+.ql-enter-from .ql-panel,
+.ql-leave-to .ql-panel {
+  transform: scale(0.96);
+}
+[data-theme="light"] .ql-panel {
+  background: rgba(238, 240, 246, 0.95);
+  border-color: rgba(0, 0, 0, 0.1);
+}
+[data-theme="light"] .ql-head {
+  border-bottom-color: rgba(0, 0, 0, 0.08);
+}
+[data-theme="light"] .ql-backdrop {
+  background: rgba(40, 50, 90, 0.18);
+}
+
 /* ---- responsive ---------------------------------------------------------- */
 @media (max-width: 680px) {
   :root {
@@ -717,16 +1100,29 @@ kbd {
   .stage {
     padding: calc(var(--menubar-h) + 10px) 0 0;
   }
-  .window {
-    /* size comes from the inline frame (full-screen on mobile); just restyle */
-    border-radius: 12px 12px 0 0;
-    border-bottom: 0;
-  }
+  /* windows are full-width but stop above the dock now, so they keep their
+     rounded corners; size still comes from the inline frame */
   .rz {
     display: none; /* no edge-resizing on touch */
   }
   .nf-fetch {
     font-size: 0.72em;
+  }
+  .dock {
+    bottom: 8px;
+    gap: 4px;
+    padding: 6px 8px;
+    border-radius: 16px;
+  }
+  .dock-svg {
+    width: 30px;
+    height: 30px;
+  }
+  .dock-tip {
+    display: none; /* no hover on touch */
+  }
+  .finder-side {
+    width: 108px;
   }
 }
 
@@ -737,6 +1133,15 @@ kbd {
     animation: none;
   }
   .caret {
+    animation: none;
+  }
+  .dock-item {
+    transition: none;
+  }
+  .dock-item:hover {
+    transform: none;
+  }
+  .dock-item.wobble .dock-svg {
     animation: none;
   }
 }

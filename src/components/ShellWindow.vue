@@ -74,10 +74,10 @@ function echo(raw: string, suffix = "") {
   lines.value.push(`<span class="term-prompt">${promptHtml.value}</span>${esc(raw)}${suffix}`);
 }
 
-function commit() {
-  if (compose.value) return composeCommit(value.value);
-
-  const raw = value.value;
+// Run one command line exactly as if it had been typed: echo, history,
+// shell.run, render. Shared by Enter (commit) and external callers (the dock's
+// Mail icon runs `mail` through here).
+function exec(raw: string) {
   echo(raw);
   if (raw.trim() && history[history.length - 1] !== raw) history.push(raw);
 
@@ -91,6 +91,22 @@ function commit() {
   histIndex = history.length;
   draft = "";
   scrollToBottom();
+}
+
+function commit() {
+  if (compose.value) return composeCommit(value.value);
+  exec(value.value);
+}
+
+/** Run a command from outside the terminal (dock). Mid-compose or mid-send it
+ *  only refocuses — no double-started forms. */
+function runCommand(raw: string) {
+  if (compose.value || sending.value) {
+    focus();
+    return;
+  }
+  exec(raw);
+  focus();
 }
 
 function startCompose() {
@@ -232,7 +248,7 @@ function onKeydown(e: KeyboardEvent) {
 function focus() {
   inputEl.value?.focus({ preventScroll: true });
 }
-defineExpose({ focus });
+defineExpose({ focus, runCommand });
 
 onMounted(() => {
   if (props.bootCmd) {
