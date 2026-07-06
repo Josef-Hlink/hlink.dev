@@ -4,7 +4,7 @@
 
 import { c } from "./util";
 
-export const JOSH_VERSION = "0.4.0";
+export const JOSH_VERSION = "0.5.0";
 
 interface Release {
   version: string;
@@ -14,6 +14,15 @@ interface Release {
 
 // newest first
 export const CHANGELOG: Release[] = [
+  {
+    version: "0.5.0",
+    date: "2026-07-06",
+    notes: [
+      "there's a dock now — finder, terminal and mail live down there",
+      "finder: browse the same filesystem without typing; double-click a file to quick look it",
+      "minimized windows tuck into the dock; closed ones relaunch fresh",
+    ],
+  },
   {
     version: "0.4.0",
     date: "2026-06-19",
