@@ -36,6 +36,47 @@ const file = (name: string, content: string): FSFile => ({ type: "file", name, c
 // what `~` expands to.
 export const HOME = ["Users", "josef"];
 
+// --- path helpers (shared by the shell and the Finder) -----------------------
+
+/** Resolve an absolute path (array of segments) to a node, or null. */
+export function resolve(path: string[]): FSNode | null {
+  let node: FSNode = root;
+  for (const part of path) {
+    if (node.type !== "dir") return null;
+    const next: FSNode | undefined = node.children[part];
+    if (!next) return null;
+    node = next;
+  }
+  return node;
+}
+
+/** Turn a user-supplied path string into an absolute segment array, relative
+ *  to `cwd`. `prev` backs `-` (previous directory); it defaults to `cwd`. */
+export function toAbs(arg: string | undefined, cwd: string[], prev: string[] = cwd): string[] {
+  if (arg === undefined || arg === "" || arg === "~") return [...HOME];
+  if (arg === "-") return [...prev];
+
+  let base: string[];
+  let rest: string;
+  if (arg.startsWith("/")) {
+    base = [];
+    rest = arg.slice(1);
+  } else if (arg.startsWith("~/")) {
+    base = [...HOME];
+    rest = arg.slice(2);
+  } else {
+    base = [...cwd];
+    rest = arg;
+  }
+
+  for (const part of rest.split("/")) {
+    if (part === "" || part === ".") continue;
+    if (part === "..") base.pop();
+    else base.push(part);
+  }
+  return base;
+}
+
 // /bin is generated from the command registry so it's always in step with
 // what the shell can actually run. `cat /bin/<name>` reads the man-blurb.
 const bin = dir(

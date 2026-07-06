@@ -6,7 +6,7 @@
 // `case` in run(). To add easter eggs: drop nodes into fs.ts and they're
 // reachable via ls/cd/cat/tree automatically.
 
-import { root, HOME, type FSDir, type FSNode } from "./fs";
+import { root, HOME, resolve as fsResolve, toAbs as fsToAbs, type FSDir, type FSNode } from "./fs";
 import { esc, c, linkify } from "./util";
 import { fastfetch } from "./fastfetch";
 import { joshVersion, joshNoop } from "./josh";
@@ -57,42 +57,17 @@ export class Shell {
 
   // --- path helpers ---------------------------------------------------------
 
+  // Both live in fs.ts now (the Finder walks the same tree); these delegates
+  // keep the call sites and bind the shell's own cwd/prev.
+
   /** Resolve an absolute path (array of segments) to a node, or null. */
   private resolve(path: string[]): FSNode | null {
-    let node: FSNode = root;
-    for (const part of path) {
-      if (node.type !== "dir") return null;
-      const next: FSNode | undefined = node.children[part];
-      if (!next) return null;
-      node = next;
-    }
-    return node;
+    return fsResolve(path);
   }
 
   /** Turn a user-supplied path string into an absolute segment array. */
   private toAbs(arg: string | undefined): string[] {
-    if (arg === undefined || arg === "" || arg === "~") return [...HOME];
-    if (arg === "-") return [...this.prev];
-
-    let base: string[];
-    let rest: string;
-    if (arg.startsWith("/")) {
-      base = [];
-      rest = arg.slice(1);
-    } else if (arg.startsWith("~/")) {
-      base = [...HOME];
-      rest = arg.slice(2);
-    } else {
-      base = [...this.cwd];
-      rest = arg;
-    }
-
-    for (const part of rest.split("/")) {
-      if (part === "" || part === ".") continue;
-      if (part === "..") base.pop();
-      else base.push(part);
-    }
-    return base;
+    return fsToAbs(arg, this.cwd, this.prev);
   }
 
   // --- command dispatch -----------------------------------------------------
