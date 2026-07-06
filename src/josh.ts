@@ -4,7 +4,7 @@
 
 import { c } from "./util";
 
-export const JOSH_VERSION = "0.5.0";
+export const JOSH_VERSION = "0.6.0";
 
 interface Release {
   version: string;
@@ -14,6 +14,17 @@ interface Release {
 
 // newest first
 export const CHANGELOG: Release[] = [
+  {
+    version: "0.6.0",
+    date: "2026-07-07",
+    notes: [
+      "safari's in the dock — klym, the gpx climb-profile app, loads live inside it",
+      "type an address; the internet in here is small but the error pages are homemade",
+      "new open command: open klym.hlink.dev, or open a project's url file",
+      "new ~/projects/klym to browse",
+      "tab completes paths now",
+    ],
+  },
   {
     version: "0.5.0",
     date: "2026-07-06",
