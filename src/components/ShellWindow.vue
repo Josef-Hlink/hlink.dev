@@ -4,7 +4,6 @@
 // keyboards work) while we render the visible line ourselves.
 import { ref, onMounted, nextTick, computed } from "vue";
 import { Shell } from "../shell";
-import { fastfetch } from "../fastfetch";
 import { esc, c } from "../util";
 
 // optional command to run on boot instead of the fastfetch intro (e.g. window 2
@@ -260,10 +259,13 @@ onMounted(() => {
   } else {
     const stamp = new Date().toString().replace(/ GMT.*/, "");
     lines.value.push(`<span class="c-dim">Last login: ${esc(stamp)} on ttys001</span>`);
-    lines.value.push(fastfetch());
-    lines.value.push(
-      `<span class="c-dim">type </span><span class="c-green b">help</span><span class="c-dim"> to look around. there are easter eggs.</span>`,
-    );
+    // the login banner is a real session: these run through the shell exactly
+    // as if typed (they just don't enter arrow-up history)
+    for (const cmd of ["fastfetch", 'echo "stuck? type help"']) {
+      echo(cmd);
+      const res = shell.run(cmd);
+      if (res.html) lines.value.push(res.html);
+    }
   }
   scrollToBottom();
   // focus is owned by App (so a hidden window doesn't grab focus on mount)

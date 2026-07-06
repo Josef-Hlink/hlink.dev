@@ -548,24 +548,15 @@ body {
 }
 
 /* ---- fastfetch ----------------------------------------------------------- */
-/* one cohesive block: every line is "logo segment + space padding + info",
-   like a real terminal — selects line-by-line and the columns stay aligned */
+/* plain command output: every line is "logo segment + space padding + info".
+   The pre only stops the wide columns from wrapping — font, line-height and
+   colors are the terminal's own, so it reads (and copies) as real text */
 .nf-fetch {
   margin: 0;
-  padding: 0.2em 0 0.7em;
+  padding: 0;
   white-space: pre;
-  line-height: 1.3;
 }
-.nf-colors {
-  display: inline-flex;
-  vertical-align: middle;
-}
-.nf-colors span {
-  width: 1.15em;
-  height: 0.9em;
-  display: inline-block;
-}
-.nf-colors.bright-row span {
+.nf-bright {
   filter: brightness(1.25) saturate(0.85);
 }
 

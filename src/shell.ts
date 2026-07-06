@@ -144,7 +144,8 @@ export class Shell {
       case "date":
         return { html: c(esc(new Date().toString()), "text") };
       case "echo":
-        return { html: c(esc(args.join(" ")), "text") };
+        // one level of surrounding quotes comes off, like a real shell
+        return { html: c(esc(rest.replace(/^(['"])(.*)\1$/s, "$2")), "text") };
       default:
         return { html: this.notFound(cmd) };
     }

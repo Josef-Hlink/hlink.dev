@@ -1,6 +1,7 @@
 // Renders the fastfetch block shown when the terminal boots (and on `ff`).
-// The logo is the classic Apple rainbow mark (colored via CSS gradient on
-// .nf-logo). Returns a trusted HTML string (no user input flows in here).
+// The logo is the classic Apple mark, rainbow-banded per row via theme tokens.
+// Everything is real monospace text — selectable, copyable, same line grid as
+// the rest of the terminal. Returns a trusted HTML string (no user input).
 
 import { c, esc, type Color } from "./util";
 import { JOSH_VERSION } from "./josh";
@@ -93,11 +94,11 @@ const field = (label: string, value: string): string =>
 
 const COLORS = ["red", "peach", "yellow", "green", "teal", "blue", "mauve", "pink"] as const;
 
-// one row of color swatches (rendered inline within a logo line)
-const colorRow = (className: string): string =>
-  `<span class="nf-colors ${className}">` +
-  COLORS.map((name) => `<span style="background:var(--${name})"></span>`).join("") +
-  `</span>`;
+// one row of color blocks — actual ███ characters, like the real tool prints
+const colorRow = (bright: boolean): string => {
+  const row = COLORS.map((name) => c("███", name)).join("");
+  return bright ? `<span class="nf-bright">${row}</span>` : row;
+};
 
 // rainbow band color for each logo row (Apple palette, top→bottom), via theme tokens
 const BANDS: Color[] = [
@@ -134,8 +135,8 @@ export function fastfetch(): string {
     field("Locale", c(esc(locale()), "text")),
     field("Timezone", c(esc(timezone()), "text")),
     "",
-    colorRow("dim-row"),
-    colorRow("bright-row"),
+    colorRow(false),
+    colorRow(true),
   ];
 
   // Merge into single lines — logo segment (padded to a fixed width) + gap +
