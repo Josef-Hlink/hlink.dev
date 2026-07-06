@@ -735,6 +735,21 @@ kbd {
    Fixed bottom-center frosted bar, above the windows (z 1–2) and below the
    menubar (z 10). Hover = per-icon lift; no neighbor magnification. */
 .dock {
+  /* icon palette (--dki-*): one set of shapes, two design languages.
+     dark = macOS Tahoe-style charcoal tiles with colored motifs;
+     light = the classic colorful tiles. */
+  --dki-edge: rgba(255, 255, 255, 0.14);
+  --dki-finder-a: #82aaff; /* face half; also the features on the other half */
+  --dki-finder-b: #2a2c38; /* tile half */
+  --dki-term-tile: #2a2c38;
+  --dki-term-glyph: #d0d4e0;
+  --dki-term-ring: #82aaff;
+  --dki-mail-tile: #2a2c38;
+  --dki-mail-env: #82aaff;
+  --dki-safari-tile: #2a2c38;
+  --dki-safari-dial: #33508f;
+  --dki-trash: #c9cede;
+
   position: fixed;
   bottom: 10px;
   left: 50%;
@@ -831,6 +846,18 @@ kbd {
   animation: trash-wobble 0.5s ease;
 }
 [data-theme="light"] .dock {
+  --dki-edge: rgba(0, 0, 0, 0.12);
+  --dki-finder-a: #c9e6ff;
+  --dki-finder-b: #3d8bf2;
+  --dki-term-tile: #f5f6f8; /* white terminal, black >_ */
+  --dki-term-glyph: #16181d;
+  --dki-term-ring: #3d8bf2;
+  --dki-mail-tile: #3d8bf2;
+  --dki-mail-env: #f4f6fb;
+  --dki-safari-tile: #f5f6f8;
+  --dki-safari-dial: #3d8bf2;
+  --dki-trash: #4a4f63;
+
   background: rgba(226, 228, 236, 0.6);
   border-color: rgba(0, 0, 0, 0.08);
   box-shadow: 0 12px 30px -14px rgba(40, 50, 90, 0.3);
