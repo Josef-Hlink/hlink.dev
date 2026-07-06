@@ -1,11 +1,11 @@
 <script setup lang="ts">
-// The dock: fixed bottom-center frosted bar. Finder + Terminal launch/focus
-// their windows (dot = running), Mail jumps into the terminal's compose flow,
-// Safari is a dimmed teaser for the upcoming browser, Trash just wobbles.
-// All icons are inline SVG — no assets to load.
+// The dock: fixed bottom-center frosted bar. Finder + Terminal + Safari
+// launch/focus their windows (dot = running), Mail jumps into the terminal's
+// compose flow, Trash just wobbles. All icons are inline SVG — no assets to
+// load.
 import { ref } from "vue";
 
-type AppId = "terminal" | "finder";
+type AppId = "terminal" | "finder" | "safari";
 
 defineProps<{ running: Record<AppId, boolean> }>();
 const emit = defineEmits<{ launch: [id: AppId]; mail: [] }>();
@@ -166,8 +166,8 @@ function wobbleTrash() {
       </svg>
     </button>
 
-    <button class="dock-item disabled" aria-label="Safari (coming soon)" aria-disabled="true">
-      <span class="dock-tip">Safari — coming soon</span>
+    <button class="dock-item" aria-label="Safari" @click="emit('launch', 'safari')">
+      <span class="dock-tip">Safari</span>
       <svg class="dock-svg" viewBox="0 0 34 34" aria-hidden="true">
         <rect width="34" height="34" rx="8" fill="var(--dki-safari-tile)" />
         <circle cx="17" cy="17" r="11.5" fill="var(--dki-safari-dial)" />
@@ -191,6 +191,7 @@ function wobbleTrash() {
           stroke="var(--dki-edge)"
         />
       </svg>
+      <span v-if="running.safari" class="dock-dot"></span>
     </button>
 
     <span class="dock-sep" aria-hidden="true"></span>

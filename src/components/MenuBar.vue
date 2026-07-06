@@ -8,6 +8,7 @@ const emit = defineEmits<{ "toggle-theme": [] }>();
 const MENUS: Record<string, string[]> = {
   Terminal: ["Shell", "Edit", "View", "Window", "Help"],
   Finder: ["File", "Edit", "View", "Go", "Window", "Help"],
+  Safari: ["File", "Edit", "View", "History", "Bookmarks", "Window", "Help"],
 };
 const items = computed(() => MENUS[props.app] ?? MENUS.Finder);
 

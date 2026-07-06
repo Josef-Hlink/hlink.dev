@@ -1,8 +1,8 @@
 <script setup lang="ts">
 // The "desktop": wallpaper + faux macOS menubar + a dock + the app windows
-// (terminal, finder). Owns the cross-cutting state: which apps are open /
-// minimized, z-order + focus, which tmux window is active, the live clock,
-// and the Ctrl-Space prefix.
+// (terminal, finder, safari). Owns the cross-cutting state: which apps are
+// open / minimized, z-order + focus, which tmux window is active, the live
+// clock, and the Ctrl-Space prefix.
 import { ref, reactive, computed, watch, watchEffect, onMounted, onUnmounted, nextTick } from "vue";
 import MenuBar from "./components/MenuBar.vue";
 import Dock from "./components/Dock.vue";
@@ -10,6 +10,8 @@ import DesktopWindow from "./components/DesktopWindow.vue";
 import TmuxStatus from "./components/TmuxStatus.vue";
 import ShellWindow from "./components/ShellWindow.vue";
 import Finder from "./components/Finder.vue";
+import Safari from "./components/Safari.vue";
+import { resolveInput } from "./browser";
 
 // Every tmux window is a real josh shell (each needs a focused <input> to keep
 // the keyboard, so input-less windows are out). Window 2 just boots by cat-ing
@@ -35,17 +37,22 @@ const now = ref(new Date());
 // Closed apps unmount (relaunch = fresh boot); minimized ones only hide, so
 // their state survives the round-trip to the dock. leaveKind picks the
 // transition: shrink-to-dock for minimize, fade-out for close.
-type AppId = "terminal" | "finder";
+type AppId = "terminal" | "finder" | "safari";
 type WinState = "open" | "minimized" | "closed";
 
-const winState = reactive<Record<AppId, WinState>>({ terminal: "open", finder: "closed" });
+const winState = reactive<Record<AppId, WinState>>({
+  terminal: "open",
+  finder: "closed",
+  safari: "closed",
+});
 const leaveKind = reactive<Record<AppId, "close" | "minimize">>({
   terminal: "close",
   finder: "close",
+  safari: "close",
 });
 // bottom → top; z-index = position + 1, so windows always stay below the
 // menubar (z 10) and the dock (z 9)
-const zOrder = ref<AppId[]>(["finder", "terminal"]);
+const zOrder = ref<AppId[]>(["safari", "finder", "terminal"]);
 const zIndexOf = (id: AppId) => zOrder.value.indexOf(id) + 1;
 
 // frontmost open window; null when everything is closed/minimized (the real
@@ -53,6 +60,10 @@ const zIndexOf = (id: AppId) => zOrder.value.indexOf(id) + 1;
 const focusedApp = computed<AppId | null>(
   () => [...zOrder.value].reverse().find((id) => winState[id] === "open") ?? null,
 );
+
+// menubar app name follows focus; an empty desktop says Finder, like macOS
+const APP_NAMES: Record<AppId, string> = { terminal: "Terminal", finder: "Finder", safari: "Safari" };
+const menuApp = computed(() => APP_NAMES[focusedApp.value ?? "finder"]);
 
 function bringToFront(id: AppId) {
   zOrder.value = [...zOrder.value.filter((a) => a !== id), id];
@@ -80,10 +91,23 @@ function onDockMail() {
   onDockLaunch("terminal");
   nextTick(() => shells[active.value]?.value?.runCommand("mail"));
 }
+// The shell's `open` command, going the other way: external urls skip Safari
+// and go straight to a real tab; everything else launches Safari and lets its
+// fake DNS decide (unknown hosts land on the not-found page).
+function onOpenUrl(input: string) {
+  const t = resolveInput(input);
+  if (t.kind === "external") {
+    window.open(t.url, "_blank", "noopener");
+    return;
+  }
+  onDockLaunch("safari");
+  nextTick(() => safariRef.value?.navigateTo(input));
+}
 
 const shell1Ref = ref<InstanceType<typeof ShellWindow> | null>(null);
 const shell2Ref = ref<InstanceType<typeof ShellWindow> | null>(null);
 const shells = [shell1Ref, shell2Ref];
+const safariRef = ref<InstanceType<typeof Safari> | null>(null);
 
 // Keep DOM focus in step with window focus: the terminal's hidden input must
 // not swallow keystrokes while the finder is frontmost.
@@ -155,12 +179,7 @@ onUnmounted(() => {
 <template>
   <div class="wallpaper" aria-hidden="true"></div>
 
-  <MenuBar
-    :now="now"
-    :theme="theme"
-    :app="focusedApp === 'terminal' ? 'Terminal' : 'Finder'"
-    @toggle-theme="toggleTheme"
-  />
+  <MenuBar :now="now" :theme="theme" :app="menuApp" @toggle-theme="toggleTheme" />
 
   <main class="stage">
     <Transition :name="'win-' + leaveKind.terminal">
@@ -177,8 +196,13 @@ onUnmounted(() => {
       >
         <TmuxStatus :windows="windows" :active="active" :prefix="prefix" @select="activate" />
         <div class="panes">
-          <ShellWindow ref="shell1Ref" v-show="active === 0" />
-          <ShellWindow ref="shell2Ref" boot-cmd="cat about.txt" v-show="active === 1" />
+          <ShellWindow ref="shell1Ref" v-show="active === 0" @open-url="onOpenUrl" />
+          <ShellWindow
+            ref="shell2Ref"
+            boot-cmd="cat about.txt"
+            v-show="active === 1"
+            @open-url="onOpenUrl"
+          />
         </div>
       </DesktopWindow>
     </Transition>
@@ -194,10 +218,27 @@ onUnmounted(() => {
         @focus="bringToFront('finder')"
       />
     </Transition>
+
+    <Transition :name="'win-' + leaveKind.safari">
+      <Safari
+        v-if="winState.safari !== 'closed'"
+        v-show="winState.safari !== 'minimized'"
+        ref="safariRef"
+        :z="zIndexOf('safari')"
+        :focused="focusedApp === 'safari'"
+        @close="closeWin('safari')"
+        @minimize="minimizeWin('safari')"
+        @focus="bringToFront('safari')"
+      />
+    </Transition>
   </main>
 
   <Dock
-    :running="{ terminal: winState.terminal !== 'closed', finder: winState.finder !== 'closed' }"
+    :running="{
+      terminal: winState.terminal !== 'closed',
+      finder: winState.finder !== 'closed',
+      safari: winState.safari !== 'closed',
+    }"
     @launch="onDockLaunch"
     @mail="onDockMail"
   />

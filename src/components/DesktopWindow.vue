@@ -3,7 +3,7 @@
 // handles, traffic lights, maximize. Extracted from App.vue so the desktop can
 // host more than one app (terminal, finder, …). The parent owns z-order and
 // focus; this component owns its own frame and maximized state.
-import { ref } from "vue";
+import { ref, watchEffect, onUnmounted } from "vue";
 
 const props = withDefaults(
   defineProps<{
@@ -57,6 +57,16 @@ const frame = ref<Frame>(initialFrame());
 const maximized = ref(false);
 const dragging = ref(false);
 const resizing = ref(false);
+
+// While any window drags/resizes, iframes in OTHER windows (Safari) must not
+// swallow the pointer — a body class lets CSS switch them off. Only one window
+// interacts at a time (pointer capture), so windows can't fight over it.
+watchEffect(() =>
+  document.body.classList.toggle("win-interacting", dragging.value || resizing.value),
+);
+onUnmounted(() => {
+  if (dragging.value || resizing.value) document.body.classList.remove("win-interacting");
+});
 
 // --- drag (titlebar) ---
 let drag: { px: number; py: number; x: number; y: number } | null = null;

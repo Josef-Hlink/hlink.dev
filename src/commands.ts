@@ -39,6 +39,7 @@ export const COMMANDS: CommandSpec[] = [
   { name: "alias", summary: "list or set aliases", usage: "alias [name | name=value]...", rawArgs: true },
   { name: "fastfetch", summary: "system info, unix larp", usage: "fastfetch", essential: true },
   { name: "mail", summary: "send josef an email", usage: "mail", essential: true },
+  { name: "open", summary: "open a url in Safari", usage: "open <url | file>", essential: true },
   { name: "josh", summary: "josef's own shell", usage: "josh [-v]", flags: "vV", longFlags: ["version"] },
   { name: "whoami", summary: "print the current user", usage: "whoami" },
   { name: "hostname", summary: "print the hostname", usage: "hostname" },

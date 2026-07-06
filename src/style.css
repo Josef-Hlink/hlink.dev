@@ -32,6 +32,15 @@
   --menubar-h: 28px;
   --dock-clear: 74px; /* room the dock needs at the bottom (matches DOCK_CLEAR) */
   --term-fs: 14px;
+
+  /* shared icon tokens (the rest of the --dki-* palette is scoped on .dock);
+     these live here because safari's start-page tiles use them too */
+  --dki-edge: rgba(255, 255, 255, 0.14);
+  --dki-term-tile: #2a2c38;
+  --dki-term-glyph: #d0d4e0;
+  --dki-term-ring: #82aaff;
+  --dki-safari-tile: #2a2c38;
+  --dki-safari-dial: #33508f;
 }
 
 /* light theme — TokyoNight Day, flipped on by the menubar ◑ toggle. Overrides
@@ -59,6 +68,13 @@
   --red: #f52a65;
   --mauve: #9854f1; /* magenta — session name */
   --pink: #d20065;
+
+  --dki-edge: rgba(0, 0, 0, 0.12);
+  --dki-term-tile: #f5f6f8; /* white terminal, black >_ */
+  --dki-term-glyph: #16181d;
+  --dki-term-ring: #3d8bf2;
+  --dki-safari-tile: #f5f6f8;
+  --dki-safari-dial: #3d8bf2;
 }
 [data-theme="light"] .menubar {
   color: rgba(40, 52, 96, 0.92);
@@ -260,6 +276,11 @@ body {
   user-select: none;
 }
 .window.interacting .panes {
+  pointer-events: none;
+}
+/* while ANY window drags/resizes (body class set by DesktopWindow), iframes in
+   other windows must not swallow the pointer — safari's klym frame sits there */
+body.win-interacting iframe {
   pointer-events: none;
 }
 
@@ -728,17 +749,12 @@ kbd {
 .dock {
   /* icon palette (--dki-*): one set of shapes, two design languages.
      dark = macOS Tahoe-style charcoal tiles with colored motifs;
-     light = the classic colorful tiles. */
-  --dki-edge: rgba(255, 255, 255, 0.14);
+     light = the classic colorful tiles. edge + terminal + safari tokens live
+     on :root because safari's start-page tiles share them. */
   --dki-finder-a: #82aaff; /* face half; also the features on the other half */
   --dki-finder-b: #2a2c38; /* tile half */
-  --dki-term-tile: #2a2c38;
-  --dki-term-glyph: #d0d4e0;
-  --dki-term-ring: #82aaff;
   --dki-mail-tile: #2a2c38;
   --dki-mail-env: #82aaff;
-  --dki-safari-tile: #2a2c38;
-  --dki-safari-dial: #33508f;
   --dki-trash: #c9cede;
 
   position: fixed;
@@ -837,16 +853,10 @@ kbd {
   animation: trash-wobble 0.5s ease;
 }
 [data-theme="light"] .dock {
-  --dki-edge: rgba(0, 0, 0, 0.12);
   --dki-finder-a: #c9e6ff;
   --dki-finder-b: #3d8bf2;
-  --dki-term-tile: #f5f6f8; /* white terminal, black >_ */
-  --dki-term-glyph: #16181d;
-  --dki-term-ring: #3d8bf2;
   --dki-mail-tile: #3d8bf2;
   --dki-mail-env: #f4f6fb;
-  --dki-safari-tile: #f5f6f8;
-  --dki-safari-dial: #3d8bf2;
   --dki-trash: #4a4f63;
 
   background: rgba(226, 228, 236, 0.6);
@@ -1019,6 +1029,184 @@ kbd {
   border-top-color: rgba(0, 0, 0, 0.08);
 }
 
+/* ---- safari ---------------------------------------------------------------
+   Shares the finder's toolbar + nav-button classes; adds the address pill,
+   the favorites start page, the live klym iframe and the toy error pages. */
+.safari-toolbar {
+  flex: 1 1 auto;
+  min-width: 0;
+  margin-right: 6px;
+}
+.safari-addr {
+  flex: 1 1 auto;
+  min-width: 0;
+  max-width: 560px;
+  margin: 0 auto;
+  display: flex;
+  height: 24px;
+  border-radius: 7px;
+  background: var(--surface0);
+}
+.safari-addr:focus-within {
+  box-shadow: 0 0 0 1px var(--sky);
+}
+.safari-addr input {
+  flex: 1;
+  min-width: 0;
+  border: 0;
+  padding: 0 10px;
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  font-size: 12px;
+  text-align: center;
+  outline: none;
+}
+.safari-addr input::placeholder {
+  color: var(--overlay);
+}
+.safari-body {
+  position: relative; /* anchors the veil + the focus guard */
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+.safari-frame {
+  flex: 1 1 auto;
+  min-height: 0;
+  width: 100%;
+  border: 0;
+  background: #fff; /* klym is light — don't flash the window blur through */
+}
+.safari-start {
+  flex: 1 1 auto;
+  overflow-y: auto;
+  padding: 44px 48px;
+  scrollbar-width: thin;
+  scrollbar-color: var(--surface1) transparent;
+}
+.safari-start-head {
+  margin-bottom: 22px;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text);
+}
+.safari-dials + .safari-start-head {
+  margin-top: 36px;
+}
+.safari-dials {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+  gap: 18px;
+}
+.safari-dial {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 4px;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  font: inherit;
+  font-size: 11.5px;
+  color: var(--subtext);
+  text-decoration: none;
+  cursor: pointer;
+  transition: transform 0.15s ease, color 0.15s ease;
+}
+.safari-dial:hover {
+  transform: translateY(-3px);
+  color: var(--text);
+}
+.safari-tile {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 64px;
+  height: 64px;
+  border-radius: 16px;
+  background: var(--dki-safari-tile);
+  border: 1px solid var(--dki-edge);
+  box-shadow: 0 10px 22px -12px rgba(0, 0, 0, 0.5);
+}
+.safari-tile svg {
+  width: 40px;
+  height: 40px;
+}
+/* a dial that IS a dock icon: the svg brings its own tile, so drop ours and
+   let it fill the 64px square (its rx 8 at 34 ≈ our 16px radius) */
+.safari-tile.full {
+  background: none;
+  border: 0;
+}
+.safari-tile.full svg {
+  width: 64px;
+  height: 64px;
+}
+.safari-start-hint {
+  margin-top: 30px;
+  font-size: 11.5px;
+  color: var(--overlay);
+}
+.safari-start-hint code {
+  color: var(--green);
+}
+.safari-veil {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  font-size: 12.5px;
+  color: var(--overlay);
+  background: var(--base);
+}
+.safari-errpage {
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 24px;
+  text-align: center;
+}
+.safari-err-compass {
+  width: 72px;
+  height: 72px;
+  margin-bottom: 8px;
+  opacity: 0.9;
+}
+.safari-err-title {
+  font-size: 14.5px;
+  font-weight: 700;
+  color: var(--text);
+}
+.safari-errpage p {
+  font-size: 12.5px;
+  color: var(--subtext);
+}
+.safari-err-btn {
+  margin-top: 10px;
+  padding: 5px 14px;
+  border: 1px solid var(--surface1);
+  border-radius: 6px;
+  background: var(--surface0);
+  color: var(--text);
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+}
+.safari-err-btn:hover {
+  background: var(--surface1);
+}
+.safari-guard {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+}
+
 /* ---- quick look -----------------------------------------------------------
    Teleported to <body>: backdrop above everything, file content rendered with
    the same classes as `cat` output. */
@@ -1139,6 +1327,9 @@ kbd {
   .finder-side {
     width: 108px;
   }
+  .safari-start {
+    padding: 24px;
+  }
 }
 
 /* ---- motion preferences -------------------------------------------------- */
@@ -1150,10 +1341,12 @@ kbd {
   .caret {
     animation: none;
   }
-  .dock-item {
+  .dock-item,
+  .safari-dial {
     transition: none;
   }
-  .dock-item:hover {
+  .dock-item:hover,
+  .safari-dial:hover {
     transform: none;
   }
   .dock-item.wobble .dock-svg {

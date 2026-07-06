@@ -9,6 +9,8 @@ import { esc, c } from "../util";
 // optional command to run on boot instead of the fastfetch intro (e.g. window 2
 // boots with `cat about.txt`). the window stays a normal interactive shell.
 const props = defineProps<{ bootCmd?: string }>();
+// `open` bubbles its url up to App, which owns the Safari window
+const emit = defineEmits<{ "open-url": [url: string] }>();
 
 const shell = new Shell(termCols);
 
@@ -100,6 +102,7 @@ function exec(raw: string) {
   const res = shell.run(raw);
   if (res.clear) lines.value = [];
   else if (res.html) lines.value.push(res.html);
+  if (res.openUrl) emit("open-url", res.openUrl);
 
   if (res.startCompose) startCompose();
   else promptHtml.value = shell.promptHTML(); // cwd may have changed

@@ -20,6 +20,9 @@ export interface RunResult {
   /** If true, the terminal should enter the interactive `mail` compose flow.
    *  run() stays pure/sync; the async send + multi-step prompts live in the UI. */
   startCompose?: boolean;
+  /** A url the `open` command wants shown. run() stays pure/sync; the UI
+   *  decides whether that means Safari or a real new tab. */
+  openUrl?: string;
 }
 
 export class Shell {
@@ -126,6 +129,8 @@ export class Shell {
         return { html: "", clear: true };
       case "fastfetch":
         return { html: fastfetch(this.cols()) };
+      case "open":
+        return this.open(args.find((a) => !a.startsWith("-")));
       case "mail":
         return {
           html:
@@ -301,6 +306,25 @@ export class Shell {
     this.prev = this.cwd;
     this.cwd = abs;
     return "";
+  }
+
+  /** `open <url | file>`: a file's first url, or the arg itself when it looks
+   *  like an address. The UI routes the url (Safari or a real tab); unknown
+   *  hosts land on Safari's not-found page, so no DNS lives here. */
+  private open(arg: string | undefined): RunResult {
+    if (!arg) return { html: c(esc("usage: open <url | file>"), "red") };
+    const opening = (url: string) =>
+      c("opening ", "dim") + c(esc(url), "blue", true) + c(" …", "dim");
+
+    const node = this.resolve(this.toAbs(arg));
+    if (node?.type === "dir") return { html: c(`open: ${esc(arg)}: is a directory`, "red") };
+    if (node) {
+      const url = /\bhttps?:\/\/[^\s<>()]+/.exec(node.content)?.[0];
+      if (!url) return { html: c(`open: ${esc(arg)}: not a url`, "red") };
+      return { html: opening(url), openUrl: url };
+    }
+    if (arg.includes("://") || arg.includes(".")) return { html: opening(arg), openUrl: arg };
+    return { html: c(`open: ${esc(arg)}: no such file or directory`, "red") };
   }
 
   private cat(arg: string | undefined): string {

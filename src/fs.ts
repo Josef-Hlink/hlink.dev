@@ -9,6 +9,8 @@ import { COMMANDS, manPage } from "./commands";
 // project by dropping files in content/<name>/ and wiring them up below.
 import twinReadme from "./content/twin/README.md?raw";
 import twinUrl from "./content/twin/url?raw";
+import klymReadme from "./content/klym/README.md?raw";
+import klymUrl from "./content/klym/url?raw";
 
 export interface FSFile {
   type: "file";
@@ -88,8 +90,12 @@ export const root: FSDir = dir("/", [
   bin,
   dir("Users", [
     dir("josef", [
-      // real projects live here now; `cat README`, then `cat url` for the link
+      // real projects live here now; `cat README`, then `open url` for the link
       dir("projects", [
+        dir("klym", [
+          file("README", klymReadme),
+          file("url", klymUrl),
+        ]),
         dir("twin", [
           file("README", twinReadme),
           file("url", twinUrl),
