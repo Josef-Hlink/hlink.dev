@@ -175,7 +175,58 @@ body {
   font-weight: 700;
 }
 .menu-item {
+  position: relative;
   color: rgba(237, 240, 252, 0.78);
+  padding: 3px 7px;
+  border-radius: 4px;
+}
+.menu-item.open {
+  background: rgba(255, 255, 255, 0.16);
+  color: rgba(237, 240, 252, 1);
+}
+/* the one menu that opens (Safari's History) */
+.menu-dropdown {
+  position: absolute;
+  top: calc(100% + 5px);
+  left: 0;
+  min-width: 170px;
+  display: flex;
+  flex-direction: column;
+  padding: 4px;
+  border-radius: 8px;
+  background: rgba(34, 36, 54, 0.92);
+  backdrop-filter: saturate(150%) blur(30px);
+  -webkit-backdrop-filter: saturate(150%) blur(30px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 14px 34px -12px rgba(0, 0, 0, 0.6);
+}
+.menu-drop-item {
+  border: 0;
+  background: transparent;
+  font: inherit;
+  font-size: 12.5px;
+  color: var(--text);
+  text-align: left;
+  padding: 4px 9px;
+  border-radius: 5px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.menu-drop-item:hover {
+  background: var(--blue);
+  color: var(--crust);
+}
+[data-theme="light"] .menu-item.open {
+  background: rgba(40, 52, 96, 0.14);
+  color: rgba(40, 52, 96, 1);
+}
+[data-theme="light"] .menu-dropdown {
+  background: rgba(244, 246, 251, 0.95);
+  border-color: rgba(0, 0, 0, 0.1);
+  box-shadow: 0 14px 34px -14px rgba(40, 50, 90, 0.35);
+}
+[data-theme="light"] .menu-drop-item:hover {
+  color: #fff;
 }
 .menu-right {
   display: flex;

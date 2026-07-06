@@ -179,7 +179,13 @@ onUnmounted(() => {
 <template>
   <div class="wallpaper" aria-hidden="true"></div>
 
-  <MenuBar :now="now" :theme="theme" :app="menuApp" @toggle-theme="toggleTheme" />
+  <MenuBar
+    :now="now"
+    :theme="theme"
+    :app="menuApp"
+    @toggle-theme="toggleTheme"
+    @navigate="onOpenUrl"
+  />
 
   <main class="stage">
     <Transition :name="'win-' + leaveKind.terminal">

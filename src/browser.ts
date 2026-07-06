@@ -22,6 +22,11 @@ const FRAME_HOSTS = new Set(["klym.hlink.dev"]);
 const SELF_HOSTS = new Set(["hlink.dev", "www.hlink.dev"]);
 const EXTERNAL_HOSTS = new Set(["github.com", "www.github.com"]);
 const START_HOSTS = new Set(["favorites"]);
+// easter eggs: hosts that resolve somewhere else entirely. yes, that's the
+// real DOJ url — the bash manual was in the files. EFTA00315849 forever
+const EGG_HOSTS: Record<string, string> = {
+  "epstein.files": "https://www.justice.gov/epstein/files/DataSet%209/EFTA00315849.pdf",
+};
 
 export function resolveInput(raw: string): Target {
   const input = raw.trim();
@@ -39,6 +44,8 @@ export function resolveInput(raw: string): Target {
     return { kind: "notfound", input, host: url.hostname || input };
 
   const host = url.hostname.toLowerCase();
+  const egg = EGG_HOSTS[host];
+  if (egg) return { kind: "external", url: egg };
   if (SELF_HOSTS.has(host) && window.self !== window.top) return { kind: "bottom" };
   if (FRAME_HOSTS.has(host) || SELF_HOSTS.has(host)) {
     url.protocol = "https:"; // these only speak https; URL.href also normalizes

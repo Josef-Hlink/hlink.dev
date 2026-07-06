@@ -77,6 +77,46 @@ export class Shell {
     return fsToAbs(arg, this.cwd, this.prev);
   }
 
+  // --- tab completion ---------------------------------------------------------
+
+  /** Complete the path the last token is typing (arguments only — the command
+   *  word never completes). Returns the replacement line, plus the candidate
+   *  names (dirs decorated with /) when the token is ambiguous and couldn't
+   *  advance — the UI lists those, like a real shell. Null: nothing to do. */
+  complete(line: string): { line: string; list?: string[] } | null {
+    const tokenStart = line.search(/\S*$/);
+    if (tokenStart === 0) return null; // empty line or the command word itself
+
+    const partial = line.slice(tokenStart);
+    const slash = partial.lastIndexOf("/");
+    const dirPart = slash >= 0 ? partial.slice(0, slash + 1) : ""; // keeps the slash
+    const prefix = partial.slice(slash + 1);
+
+    const dir = this.resolve(dirPart ? this.toAbs(dirPart) : this.cwd);
+    if (!dir || dir.type !== "dir") return null;
+
+    // dotfiles stay hidden unless the prefix asks for them, like ls
+    const matches = Object.values(dir.children)
+      .filter((n) => n.name.startsWith(prefix) && (prefix.startsWith(".") || !n.name.startsWith(".")))
+      .sort((a, b) => a.name.localeCompare(b.name));
+    if (!matches.length) return null;
+
+    if (matches.length === 1) {
+      const n = matches[0];
+      const tail = n.type === "dir" ? "/" : " "; // keep typing into a dir; a file ends the arg
+      return { line: line.slice(0, tokenStart) + dirPart + n.name + tail };
+    }
+
+    let lcp = matches[0].name;
+    for (const n of matches) while (!n.name.startsWith(lcp)) lcp = lcp.slice(0, -1);
+    const completed = line.slice(0, tokenStart) + dirPart + lcp;
+    return {
+      line: completed,
+      // no progress → show what the options are
+      list: completed === line ? matches.map((n) => n.name + (n.type === "dir" ? "/" : "")) : undefined,
+    };
+  }
+
   // --- command dispatch -----------------------------------------------------
 
   run(input: string): RunResult {

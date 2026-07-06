@@ -7,3 +7,7 @@ result-*
 .env
 .env.*
 !.env.example
+
+# claude's verification screenshots + playwright scratch
+screenshots/
+.playwright-mcp/

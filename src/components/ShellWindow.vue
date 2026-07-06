@@ -232,6 +232,22 @@ function onKeydown(e: KeyboardEvent) {
     e.preventDefault();
     if (e.shiftKey && compose.value?.step === "body") sendBody();
     else commit();
+  } else if (e.key === "Tab") {
+    // always ours — Tab must never walk focus out of the terminal
+    e.preventDefault();
+    if (compose.value) return; // no paths to complete in the mail form
+    const res = shell.complete(value.value);
+    if (!res) return;
+    setValue(res.line);
+    if (res.list) {
+      // ambiguous: list the candidates above the prompt, colored like ls
+      lines.value.push(
+        res.list
+          .map((n) => (n.endsWith("/") ? c(esc(n), "blue", true) : c(esc(n), "text")))
+          .join("   "),
+      );
+      scrollToBottom();
+    }
   } else if (e.ctrlKey && (e.key === "l" || e.key === "L")) {
     e.preventDefault();
     lines.value = [];

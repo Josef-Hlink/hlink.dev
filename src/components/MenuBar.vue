@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import { computed } from "vue";
+import { computed, ref, watch } from "vue";
 
 const props = defineProps<{ now: Date; theme: "dark" | "light"; app: string }>();
-const emit = defineEmits<{ "toggle-theme": [] }>();
+const emit = defineEmits<{ "toggle-theme": []; navigate: [url: string] }>();
 
 // menu labels follow the frontmost app, like the real menubar
 const MENUS: Record<string, string[]> = {
@@ -11,6 +11,33 @@ const MENUS: Record<string, string[]> = {
   Safari: ["File", "Edit", "View", "History", "Bookmarks", "Window", "Help"],
 };
 const items = computed(() => MENUS[props.app] ?? MENUS.Finder);
+
+// Safari's History is the one menu that actually opens: a short "recently
+// visited" list. Nobody remembers visiting the last one. That's the point.
+const HISTORY = ["klym.hlink.dev", "hlink.dev", "epstein.files"];
+const historyOpen = ref(false);
+const hasMenu = (m: string) => props.app === "Safari" && m === "History";
+
+function onItemClick(m: string) {
+  historyOpen.value = hasMenu(m) && !historyOpen.value;
+}
+function pick(url: string) {
+  historyOpen.value = false;
+  emit("navigate", url);
+}
+
+// close when clicking anywhere else, or when another app takes focus
+function onWindowPointerdown(e: PointerEvent) {
+  if (!(e.target as HTMLElement).closest(".menu-item")) historyOpen.value = false;
+}
+watch(historyOpen, (open) => {
+  if (open) window.addEventListener("pointerdown", onWindowPointerdown, true);
+  else window.removeEventListener("pointerdown", onWindowPointerdown, true);
+});
+watch(
+  () => props.app,
+  () => (historyOpen.value = false),
+);
 
 const clock = computed(() => {
   const d = props.now;
@@ -31,7 +58,20 @@ const clock = computed(() => {
         />
       </svg>
       <span class="menu-app">{{ props.app }}</span>
-      <span v-for="m in items" :key="m" class="menu-item">{{ m }}</span>
+      <span
+        v-for="m in items"
+        :key="m"
+        class="menu-item"
+        :class="{ open: historyOpen && hasMenu(m) }"
+        @click="onItemClick(m)"
+      >
+        {{ m }}
+        <div v-if="historyOpen && hasMenu(m)" class="menu-dropdown" @click.stop>
+          <button v-for="h in HISTORY" :key="h" class="menu-drop-item" @click="pick(h)">
+            {{ h }}
+          </button>
+        </div>
+      </span>
     </div>
     <div class="menu-right">
       <button
