@@ -10,7 +10,24 @@ import { esc, c } from "../util";
 // boots with `cat about.txt`). the window stays a normal interactive shell.
 const props = defineProps<{ bootCmd?: string }>();
 
-const shell = new Shell();
+const shell = new Shell(termCols);
+
+// How many characters fit on one line, measured with the screen's own font.
+// Handed to the shell so width-aware output (fastfetch) can lay itself out.
+function termCols(): number {
+  const el = screenEl.value;
+  if (!el) return 80;
+  const probe = document.createElement("span");
+  probe.style.cssText = "position:absolute;visibility:hidden;white-space:pre";
+  probe.textContent = "0".repeat(80);
+  el.appendChild(probe);
+  const ch = probe.getBoundingClientRect().width / 80;
+  probe.remove();
+  const cs = getComputedStyle(el);
+  const inner = el.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight);
+  if (!ch || inner <= 0) return 80; // not measurable (e.g. a v-show-hidden window)
+  return Math.floor(inner / ch);
+}
 
 const lines = ref<string[]>([]); // committed scrollback; each entry is trusted HTML
 const promptHtml = ref(shell.promptHTML());

@@ -23,6 +23,10 @@ export interface RunResult {
 }
 
 export class Shell {
+  /** Terminal width in columns, supplied by the UI so width-aware output
+   *  (fastfetch) can lay itself out to fit. A classic 80 when nobody measures. */
+  constructor(private cols: () => number = () => 80) {}
+
   cwd: string[] = [...HOME];
   private prev: string[] = [...HOME];
   /** name/alias → canonical spec, used to resolve and look up commands. */
@@ -121,7 +125,7 @@ export class Shell {
       case "clear":
         return { html: "", clear: true };
       case "fastfetch":
-        return { html: fastfetch() };
+        return { html: fastfetch(this.cols()) };
       case "mail":
         return {
           html:

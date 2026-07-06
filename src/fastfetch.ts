@@ -110,7 +110,7 @@ const BANDS: Color[] = [
   "blue", "blue",
 ];
 
-export function fastfetch(): string {
+export function fastfetch(cols = 80): string {
   const res =
     typeof window !== "undefined" ? `${window.innerWidth}x${window.innerHeight}` : "unknown";
 
@@ -139,12 +139,22 @@ export function fastfetch(): string {
     colorRow(true),
   ];
 
-  // Merge into single lines — logo segment (padded to a fixed width) + gap +
-  // info — so it's one cohesive block like a real terminal fetch.
   const logo = LOGO.split("\n");
   const width = Math.max(...logo.map((l) => l.length));
   const gap = "   ";
 
+  // Lay out to the terminal's width like a TUI: when both columns don't fit,
+  // skip the logo (à la --logo none) and print just the info block. Once
+  // printed it's plain text — shrink the window and it wraps like any output.
+  const plainLen = (html: string) =>
+    html.replace(/<[^>]+>/g, "").replace(/&[a-z#0-9]+;/gi, "x").length;
+  const infoW = Math.max(...info.map(plainLen));
+  if (cols < width + gap.length + infoW) {
+    return `<pre class="nf-fetch">${info.join("\n")}</pre>`;
+  }
+
+  // Merge into single lines — logo segment (padded to a fixed width) + gap +
+  // info — so it's one cohesive block like a real terminal fetch.
   const rows: string[] = [];
   for (let i = 0; i < Math.max(logo.length, info.length); i++) {
     const raw = logo[i] ?? "";

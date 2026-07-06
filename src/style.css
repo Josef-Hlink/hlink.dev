@@ -548,13 +548,13 @@ body {
 }
 
 /* ---- fastfetch ----------------------------------------------------------- */
-/* plain command output: every line is "logo segment + space padding + info".
-   The pre only stops the wide columns from wrapping — font, line-height and
-   colors are the terminal's own, so it reads (and copies) as real text */
+/* plain command output: fastfetch() lays itself out to the columns available
+   when it runs, so nothing is clipped — and pre-wrap means an already-printed
+   block rewraps (authentically mangled) if the window shrinks afterwards */
 .nf-fetch {
   margin: 0;
   padding: 0;
-  white-space: pre;
+  white-space: pre-wrap;
 }
 .nf-bright {
   filter: brightness(1.25) saturate(0.85);
@@ -1122,9 +1122,6 @@ kbd {
      rounded corners; size still comes from the inline frame */
   .rz {
     display: none; /* no edge-resizing on touch */
-  }
-  .nf-fetch {
-    font-size: 0.72em;
   }
   .dock {
     bottom: 8px;
