@@ -7,10 +7,13 @@
 // reachable via ls/cd/cat/tree automatically.
 
 import { root, HOME, resolve as fsResolve, toAbs as fsToAbs, type FSDir, type FSNode } from "./fs";
-import { esc, c, linkify } from "./util";
+import { esc, c, linkify, RELEASE_TIME } from "./util";
 import { fastfetch } from "./fastfetch";
 import { joshVersion, joshNoop } from "./josh";
 import { COMMANDS, commandIndex, manPage, DEFAULT_ALIASES, type CommandSpec } from "./commands";
+
+/** When the guest "logged in": page load (module evaluation) time. */
+const SESSION_START = Date.now();
 
 export interface RunResult {
   /** Trusted/escaped HTML to append to the terminal. */
@@ -51,7 +54,7 @@ export class Shell {
 
   promptHTML(): string {
     return (
-      c("josef", "green", true) +
+      c("guest", "green", true) +
       c("@", "green") +
       c("hlink", "green", true) +
       " " +
@@ -187,7 +190,9 @@ export class Shell {
             : joshNoop(),
         };
       case "whoami":
-        return { html: c("josef", "text") };
+        return { html: c("guest", "text") };
+      case "who":
+        return { html: this.who() };
       case "hostname":
         return { html: c("hlink", "text") };
       case "date":
@@ -234,6 +239,19 @@ export class Shell {
         c(">_", "mauve", true) +
         c(" will appear next to the session name when the prefix is armed)", "dim"),
     ].join("\n");
+  }
+
+  /** who: you're the guest on pts/0 (logged in when the page loaded); josef has
+   *  been on the console since the box last "booted" — the latest release. */
+  private who(): string {
+    const stamp = (t: number) => {
+      const d = new Date(t);
+      const p = (v: number) => String(v).padStart(2, "0");
+      return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`;
+    };
+    const row = (user: string, tty: string, at: number) =>
+      c(esc(user.padEnd(9) + tty.padEnd(13) + stamp(at)), "text");
+    return [row("josef", "tty1", RELEASE_TIME), row("guest", "pts/0", SESSION_START)].join("\n");
   }
 
   private which(args: string[]): string {
@@ -332,7 +350,7 @@ export class Shell {
     return entries
       .map((n) => {
         const mode = n.type === "dir" ? "drwxr-xr-x" : inBin ? "-rwxr-xr-x" : "-rw-r--r--";
-        const meta = `${mode}  josef  staff  ${size(n).padStart(sizeW)}  `;
+        const meta = `${mode}  josef  users  ${size(n).padStart(sizeW)}  `;
         return c(esc(meta), "dim") + nameCell(n);
       })
       .join("\n");

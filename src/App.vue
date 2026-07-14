@@ -192,8 +192,8 @@ onUnmounted(() => {
       <DesktopWindow
         v-if="winState.terminal !== 'closed'"
         v-show="winState.terminal !== 'minimized'"
-        ariaLabel="josef@hlink terminal"
-        title="josef@hlink: ~ (tmux)"
+        ariaLabel="guest@hlink terminal"
+        title="guest@hlink: ~ (tmux)"
         :z="zIndexOf('terminal')"
         :focused="focusedApp === 'terminal'"
         @close="closeWin('terminal')"
