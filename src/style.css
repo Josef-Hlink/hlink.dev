@@ -543,7 +543,10 @@ body.win-interacting iframe {
   overflow-x: hidden;
   padding: 14px 16px 16px;
   font-size: var(--term-fs);
-  line-height: 1.55;
+  /* the font's natural line box, like a real terminal — JetBrains Mono's block
+     glyphs (fastfetch logo, ███ color rows) span exactly this, so art tiles
+     seamlessly; anything roomier cuts horizontal gaps through it */
+  line-height: normal;
   scrollbar-width: thin;
   scrollbar-color: var(--surface1) transparent;
 }
@@ -573,6 +576,13 @@ body.win-interacting iframe {
 
 .term-prompt {
   white-space: pre;
+}
+
+/* one line of air above the live prompt, transient-prompt style: it sits
+   outside the scrollback, so it collapses once the command is committed */
+.term-spacer {
+  height: 1.3em; /* ≈ one line, for browsers without lh units */
+  height: 1lh;
 }
 
 /* input line + block caret */

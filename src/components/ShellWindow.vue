@@ -314,6 +314,10 @@ onMounted(() => {
       <div v-for="(l, i) in lines" :key="i" class="term-line" v-html="l"></div>
     </div>
 
+    <!-- transient-prompt style breathing room: lives outside the scrollback,
+         so it collapses as soon as the command line is committed above -->
+    <div v-if="lines.length" class="term-spacer"></div>
+
     <div v-show="!sending" class="term-inputline">
       <span class="term-prompt" v-html="promptHtml"></span
       ><span class="term-typed">{{ before }}<span class="caret">{{ under }}</span>{{ after }}</span>
