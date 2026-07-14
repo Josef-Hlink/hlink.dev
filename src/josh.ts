@@ -4,7 +4,7 @@
 
 import { c } from "./util";
 
-export const JOSH_VERSION = "0.6.0";
+export const JOSH_VERSION = "0.7.0";
 
 interface Release {
   version: string;
@@ -14,6 +14,17 @@ interface Release {
 
 // newest first
 export const CHANGELOG: Release[] = [
+  {
+    version: "0.7.0",
+    date: "2026-07-14",
+    notes: [
+      "fastfetch flies the NixOS snowflake now — hlink runs nix, the fetch should say so",
+      "you're guest here now; who (new command) shows who else is on",
+      "uptime is real: the box 'reboots' at every release",
+      "terminal line grid tightened to the font's natural height, so the logo tiles solid",
+      "the prompt gets a breathing line above it that collapses on enter, transient-style",
+    ],
+  },
   {
     version: "0.6.0",
     date: "2026-07-07",
