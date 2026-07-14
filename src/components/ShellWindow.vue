@@ -294,7 +294,7 @@ onMounted(() => {
     promptHtml.value = shell.promptHTML();
   } else {
     const stamp = new Date().toString().replace(/ GMT.*/, "");
-    lines.value.push(`<span class="c-dim">Last login: ${esc(stamp)} on ttys001</span>`);
+    lines.value.push(`<span class="c-dim">Last login: ${esc(stamp)} on pts/0</span>`);
     // the login banner is a real session: these run through the shell exactly
     // as if typed (they just don't enter arrow-up history)
     for (const cmd of ["fastfetch", 'echo "stuck? type help"']) {

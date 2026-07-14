@@ -1,5 +1,11 @@
 // Small shared helpers used by the shell + renderers.
 
+/** When the box "booted": the latest release's tag commit time, injected by
+ *  vite at build. fastfetch's Uptime counts from it, and `who` shows josef
+ *  logged in since then. Outside vite (standalone compiles) it's just now. */
+export const RELEASE_TIME: number =
+  typeof __RELEASE_TIME__ === "string" ? Date.parse(__RELEASE_TIME__) : Date.now();
+
 /** Escape text that originated from the user or the (fake) filesystem before
  *  it ever touches innerHTML. Everything rendered as HTML must pass through here
  *  unless it is a trusted literal we authored. */

@@ -1,7 +1,7 @@
 # hlink.dev
 
 My corner of the internet: a floating macOS terminal running tmux, as my
-landing page. Window `1:josh` boots `fastfetch` (Apple logo, with a few real
+landing page. Window `1:josh` boots `fastfetch` (NixOS logo, with a few real
 per-visitor lines) and drops you into an interactive fake shell, `josh`, with a
 curated filesystem to explore. Window `2:josh` opens my about file with `cat`.
 
@@ -29,7 +29,7 @@ npm run preview  # serve the built dist/ locally
 src/
   fs.ts             the fake filesystem (the thing I grow over time)
   shell.ts          command interpreter: ls/cd/cat/tree/fastfetch/josh/...
-  fastfetch.ts      boot banner (Apple logo + system info; browser/memory/locale are real)
+  fastfetch.ts      boot banner (NixOS logo + system info; browser/memory/locale are real)
   josh.ts           josh's version + changelog (josh --version)
   util.ts           esc() + colored-span helpers
   App.vue           desktop: wallpaper, menubar, window, tmux state, Ctrl-Space prefix

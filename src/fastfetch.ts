@@ -1,9 +1,10 @@
 // Renders the fastfetch block shown when the terminal boots (and on `ff`).
-// The logo is the classic Apple mark, rainbow-banded per row via theme tokens.
+// The logo is the NixOS snowflake as fastfetch ships it, $n color markers and
+// all — odd markers are blue, even are cyan, one color per lambda arm.
 // Everything is real monospace text — selectable, copyable, same line grid as
 // the rest of the terminal. Returns a trusted HTML string (no user input).
 
-import { c, esc, type Color } from "./util";
+import { c, esc, RELEASE_TIME, type Color } from "./util";
 import { JOSH_VERSION } from "./josh";
 
 // Real, per-visitor: read the actual browser + version from navigator. Prefers
@@ -70,23 +71,57 @@ const cores = (): string => {
   return n ? String(n) : "unknown";
 };
 
-const LOGO = `                     ..'
-                 ,xNMM.
-               .OMMMMo
-               lMM"
-     .;loddo:.  .olloddol;.
-   cKMMMMMMMMMMNWMMMMMMMMMM0:
- .KMMMMMMMMMMMMMMMMMMMMMMMWd.
- XMMMMMMMMMMMMMMMMMMMMMMMX.
-;MMMMMMMMMMMMMMMMMMMMMMMM:
-:MMMMMMMMMMMMMMMMMMMMMMMM:
-.MMMMMMMMMMMMMMMMMMMMMMMMX.
- kMMMMMMMMMMMMMMMMMMMMMMMMWd.
- 'XMMMMMMMMMMMMMMMMMMMMMMMMMMk
-  'XMMMMMMMMMMMMMMMMMMMMMMMMK.
-    kMMMMMMMMMMMMMMMMMMMMMMd
-     ;KMMMMMMMWXXWMMMMMMMk.
-       "cooc*"    "*coo'"`;
+// Real, sort of: the box "reboots" at every release, so uptime is the time
+// since the latest tag's commit. Formatted like the real tool.
+const uptime = (): string => {
+  const mins = Math.max(0, Math.floor((Date.now() - RELEASE_TIME) / 60000));
+  const d = Math.floor(mins / 1440);
+  const h = Math.floor((mins % 1440) / 60);
+  const m = mins % 60;
+  const n = (v: number, unit: string) => `${v} ${unit}${v === 1 ? "" : "s"}`;
+  if (d > 0) return `${n(d, "day")}, ${n(h, "hour")}`;
+  if (h > 0) return `${n(h, "hour")}, ${n(m, "min")}`;
+  return n(m, "min");
+};
+
+// Verbatim from fastfetch's src/logo/ascii/n/nixos.txt.
+const LOGO = `          $1▗▄▄▄       $2▗▄▄▄▄    ▄▄▄▖
+          $1▜███▙       $2▜███▙  ▟███▛
+           $1▜███▙       $2▜███▙▟███▛
+            $1▜███▙       $2▜██████▛
+     $1▟█████████████████▙ $2▜████▛     $3▟▙
+    $1▟███████████████████▙ $2▜███▙    $3▟██▙
+           $6▄▄▄▄▖           $2▜███▙  $3▟███▛
+          $6▟███▛             $2▜██▛ $3▟███▛
+         $6▟███▛               $2▜▛ $3▟███▛
+$6▟███████████▛                  $3▟██████████▙
+$6▜██████████▛                  $3▟███████████▛
+      $6▟███▛ $5▟▙               $3▟███▛
+     $6▟███▛ $5▟██▙             $3▟███▛
+    $6▟███▛  $5▜███▙           $3▝▀▀▀▀
+    $6▜██▛    $5▜███▙ $4▜██████████████████▛
+     $6▜▛     $5▟████▙ $4▜████████████████▛
+           $5▟██████▙         $4▜███▙
+          $5▟███▛▜███▙         $4▜███▙
+         $5▟███▛  ▜███▙         $4▜███▙
+         $5▝▀▀▀    ▀▀▀▀▘         $4▀▀▀▘`;
+
+const stripMarkers = (row: string): string => row.replace(/\$\d/g, "");
+
+// Colorize the logo: each $n marker switches color until the next one, and a
+// row that starts unmarked continues the previous row's color. Returns one
+// HTML string per row.
+const renderLogo = (rows: string[]): string[] => {
+  let color: Color = "blue";
+  return rows.map((row) => {
+    let out = "";
+    for (const part of row.split(/(\$\d)/)) {
+      if (/^\$\d$/.test(part)) color = Number(part[1]) % 2 ? "blue" : "sky";
+      else if (part) out += c(esc(part), color);
+    }
+    return out;
+  });
+};
 
 // "Label: value" line.
 const field = (label: string, value: string): string =>
@@ -100,33 +135,26 @@ const colorRow = (bright: boolean): string => {
   return bright ? `<span class="nf-bright">${row}</span>` : row;
 };
 
-// rainbow band color for each logo row (Apple palette, top→bottom), via theme tokens
-const BANDS: Color[] = [
-  "green", "green", "green", "green",
-  "yellow", "yellow", "yellow",
-  "peach", "peach", "peach",
-  "red", "red", "red",
-  "mauve", "mauve",
-  "blue", "blue",
-];
-
 export function fastfetch(cols = 80): string {
   const res =
     typeof window !== "undefined" ? `${window.innerWidth}x${window.innerHeight}` : "unknown";
 
   // used + budget are real where available; fall back to the fake 8 GB line
   const mem = memoryMiB();
-  const memory = mem ? `${mem.used}MiB / ${mem.limit}MiB` : "412MiB / 8192MiB DDR3";
+  const memory = mem ? `${mem.used}MiB / ${mem.limit}MiB` : "412MiB / 8192MiB";
 
   const info: string[] = [
-    c("josef", "green", true) + c("@", "dim") + c("hlink", "green", true),
+    c("guest", "green", true) + c("@", "dim") + c("hlink", "green", true),
     c("─".repeat(11), "dim"),
-    field("OS", c("macOS Tahoe 26.4 arm64", "text")),
-    field("Uptime", c("48 days, 23 hours", "text")),
+    field("OS", c("NixOS 26.05 (Yarara) aarch64", "text")),
+    field("Host", c("Apple MacBook Air (M1, 2020)", "text")),
+    field("Kernel", c("Linux 7.0.11", "text")),
+    field("Uptime", c(esc(uptime()), "text")),
     field("Shell", c(`josh ${JOSH_VERSION}`, "text")),
-    field("WM", c("Quartz + AeroSpace", "text")),
-    field("Terminal", c("Apple Terminal 470", "text")),
+    field("Terminal", c("/dev/pts/0", "text")),
     field("Font", c("JetBrains Mono", "text")),
+    field("Wallpaper", c("Mac OS X Lion Default", "text")),
+    field("Battery", c("100% [AC connected]", "text")),
     // --- below here is real, per-visitor data ---
     field("Browser", c(esc(detectBrowser()), "text")),
     field("Memory", c(memory, "text")),
@@ -140,7 +168,7 @@ export function fastfetch(cols = 80): string {
   ];
 
   const logo = LOGO.split("\n");
-  const width = Math.max(...logo.map((l) => l.length));
+  const width = Math.max(...logo.map((l) => stripMarkers(l).length));
   const gap = "   ";
 
   // Lay out to the terminal's width like a TUI: when both columns don't fit,
@@ -155,11 +183,11 @@ export function fastfetch(cols = 80): string {
 
   // Merge into single lines — logo segment (padded to a fixed width) + gap +
   // info — so it's one cohesive block like a real terminal fetch.
+  const colored = renderLogo(logo);
   const rows: string[] = [];
   for (let i = 0; i < Math.max(logo.length, info.length); i++) {
-    const raw = logo[i] ?? "";
-    const padded = raw + " ".repeat(width - raw.length);
-    rows.push(c(esc(padded), BANDS[i] ?? "blue") + gap + (info[i] ?? ""));
+    const pad = " ".repeat(width - stripMarkers(logo[i] ?? "").length);
+    rows.push((colored[i] ?? "") + pad + gap + (info[i] ?? ""));
   }
 
   return `<pre class="nf-fetch">${rows.join("\n")}</pre>`;
