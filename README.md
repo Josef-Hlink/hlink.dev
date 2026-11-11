@@ -75,3 +75,11 @@ src/
       encode zstd gzip
   }
   ```
+
+## License
+
+The code is MIT-licensed; see [LICENSE](LICENSE). That covers the code only:
+the writing the site serves (the about file and the rest of the shell's
+filesystem, in `src/fs.ts` and `src/content/`) is © Josef Hamelink, all rights
+reserved. `public/osx-lion.jpeg` is Apple's macOS Lion wallpaper and isn't mine
+to license.
