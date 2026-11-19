@@ -164,3 +164,7 @@ if __name__ == "__main__":
             out = here / f"hlink-{shape}{suffix}.svg"
             out.write_text(svg(shape, gap))
             print(out.relative_to(here.parent), out.stat().st_size, "bytes")
+    # hlink.dev's own favicon: the small cut, since tabs draw it at 16-32px
+    fav = here.parent / "public" / "favicon.svg"
+    fav.write_text(svg("tile", GAP["-small"]))
+    print(fav.relative_to(here.parent), fav.stat().st_size, "bytes")

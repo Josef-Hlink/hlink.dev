@@ -219,43 +219,13 @@ defineExpose({ navigateTo });
           </button>
           <button class="safari-dial" @click="navigateTo('hlink.dev')">
             <span class="safari-tile full">
-              <!-- the dock's terminal icon: this very site, inside itself -->
-              <svg viewBox="0 0 34 34" aria-hidden="true">
-                <rect width="34" height="34" rx="8" fill="var(--dki-term-tile)" />
-                <rect
-                  x="2.2"
-                  y="2.2"
-                  width="29.6"
-                  height="29.6"
-                  rx="5.8"
-                  fill="none"
-                  stroke="var(--dki-term-ring)"
-                  stroke-width="1.4"
-                />
-                <path
-                  d="M8.5 10.5 L14 15 L8.5 19.5"
-                  stroke="var(--dki-term-glyph)"
-                  stroke-width="2.6"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  fill="none"
-                />
-                <path
-                  d="M16.5 19.5 H22.5"
-                  stroke="var(--dki-term-glyph)"
-                  stroke-width="2.6"
-                  stroke-linecap="round"
-                  fill="none"
-                />
-                <rect
-                  x="0.5"
-                  y="0.5"
-                  width="33"
-                  height="33"
-                  rx="7.5"
-                  fill="none"
-                  stroke="var(--dki-edge)"
-                />
+              <!-- the hlink mark (hlink/brand/hlink-tile.svg) — fixed brand
+                   colours, identical in both themes, like klym's -->
+              <svg viewBox="0 0 512 512" aria-hidden="true">
+                <rect width="512" height="512" rx="112" fill="#1a1b26" />
+                <path fill="#82aaff" d="M192 512L112 512C94.8 512 78.5 508.1 64 501.2L64 299Q64 260 79.1 224.2Q93.7 189.8 120.2 163.2Q146.8 136.7 181.2 122.1Q217 107 256 107Q280.7 107 304 113L304 213Q304 231.9 291.3 245.5Q275.8 235 256 235Q229.5 235 210.7 253.7Q192 272.5 192 299ZM320 411Q328.6 408.2 337 404.6Q374.3 388.8 403.1 360.1Q431.8 331.3 447.6 294Q447.8 293.6 447.9 293.3Q448 296.1 448 299L448 501.2C433.5 508.1 417.2 512 400 512L320 512ZM112 0L192 0L192 101Q183.4 103.8 175 107.4Q137.7 123.2 108.9 151.9Q80.2 180.7 64.4 218Q64.2 218.4 64.1 218.7Q64 215.9 64 213L64 10.8C78.5 3.9 94.8 0 112 0Z" />
+                <path fill="#7dcfff" d="M220.7 266.5Q236.2 277 256 277Q282.5 277 301.3 258.3Q320 239.5 320 213L320 0L400 0C417.2 0 433.5 3.9 448 10.8L448 213Q448 252 432.9 287.8Q418.3 322.2 391.8 348.8Q365.2 375.3 330.8 389.9Q295 405 256 405Q231.3 405 208 399L208 299Q208 280.1 220.7 266.5Z" />
+                <rect x="4" y="4" width="504" height="504" rx="108" fill="none" stroke="var(--dki-edge)" stroke-width="8" />
               </svg>
             </span>
             hlink.dev
@@ -289,34 +259,28 @@ defineExpose({ navigateTo });
             rel="noopener noreferrer"
           >
             <span class="safari-tile full">
-              <!-- skeleton of the terminal app icon: no ring, the >_ takes
-                   the ring's blue — the source of the app above it -->
-              <svg viewBox="0 0 34 34" aria-hidden="true">
-                <rect width="34" height="34" rx="8" fill="var(--dki-term-tile)" />
-                <path
-                  d="M8.5 10.5 L14 15 L8.5 19.5"
+              <!-- skeleton of the mark in the repo-tile blue, the source of
+                   the app above it: the two links cut for over/under with no
+                   gap (so a crossing is one line), legs running past the tile
+                   and clipped (so the four ends stay open) -->
+              <svg viewBox="0 0 512 512" aria-hidden="true">
+                <defs>
+                  <clipPath id="safari-hlink-skeleton">
+                    <rect width="512" height="512" rx="112" />
+                  </clipPath>
+                </defs>
+                <rect width="512" height="512" rx="112" fill="var(--dki-term-tile)" />
+                <g
+                  clip-path="url(#safari-hlink-skeleton)"
+                  fill="none"
                   stroke="var(--dki-term-ring)"
-                  stroke-width="2.6"
-                  stroke-linecap="round"
+                  stroke-width="14"
                   stroke-linejoin="round"
-                  fill="none"
-                />
-                <path
-                  d="M16.5 19.5 H22.5"
-                  stroke="var(--dki-term-ring)"
-                  stroke-width="2.6"
-                  stroke-linecap="round"
-                  fill="none"
-                />
-                <rect
-                  x="0.5"
-                  y="0.5"
-                  width="33"
-                  height="33"
-                  rx="7.5"
-                  fill="none"
-                  stroke="var(--dki-edge)"
-                />
+                >
+                  <path d="M64 768L64 299Q64 260 79.1 224.2Q93.7 189.8 120.2 163.2Q146.8 136.7 181.2 122.1Q217 107 256 107Q289.2 107 320 117.9L320 213Q320 237.9 303.4 256Q302.4 254.9 301.3 253.7Q282.5 235 256 235Q229.5 235 210.7 253.7Q192 272.5 192 299L192 768ZM320 394.1Q325.4 392.1 330.8 389.9Q365.2 375.3 391.8 348.8Q418.3 322.2 432.9 287.8Q439.5 272.2 443.2 256Q448 277 448 299L448 768L320 768Z" />
+                  <path d="M208.6 256Q209.6 257.1 210.7 258.3Q229.5 277 256 277Q282.5 277 301.3 258.3Q320 239.5 320 213L320 -256L448 -256L448 213Q448 252 432.9 287.8Q418.3 322.2 391.8 348.8Q365.2 375.3 330.8 389.9Q295 405 256 405Q222.8 405 192 394.1L192 299Q192 274.1 208.6 256ZM192 -256L192 117.9Q186.6 119.9 181.2 122.1Q146.8 136.7 120.2 163.2Q93.7 189.8 79.1 224.2Q72.5 239.8 68.8 256Q64 235 64 213L64 -256Z" />
+                </g>
+                <rect x="4" y="4" width="504" height="504" rx="108" fill="none" stroke="var(--dki-edge)" stroke-width="8" />
               </svg>
             </span>
             hlink.dev
