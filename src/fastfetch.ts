@@ -1,6 +1,7 @@
 // Renders the fastfetch block shown when the terminal boots (and on `ff`).
 // The logo is the NixOS snowflake as fastfetch ships it, $n color markers and
-// all — odd markers are blue, even are cyan, one color per lambda arm.
+// all, one per lambda arm, recoloured like my own fastfetch config: $1–$6 are
+// red green blue cyan magenta yellow, clockwise from the top-left arm.
 // Everything is real monospace text — selectable, copyable, same line grid as
 // the rest of the terminal. Returns a trusted HTML string (no user input).
 
@@ -111,12 +112,14 @@ const stripMarkers = (row: string): string => row.replace(/\$\d/g, "");
 // Colorize the logo: each $n marker switches color until the next one, and a
 // row that starts unmarked continues the previous row's color. Returns one
 // HTML string per row.
+const ARMS: Color[] = ["red", "green", "blue", "sky", "mauve", "yellow"];
+
 const renderLogo = (rows: string[]): string[] => {
-  let color: Color = "blue";
+  let color: Color = ARMS[0];
   return rows.map((row) => {
     let out = "";
     for (const part of row.split(/(\$\d)/)) {
-      if (/^\$\d$/.test(part)) color = Number(part[1]) % 2 ? "blue" : "sky";
+      if (/^\$\d$/.test(part)) color = ARMS[Number(part[1]) - 1];
       else if (part) out += c(esc(part), color);
     }
     return out;
@@ -146,9 +149,11 @@ export function fastfetch(cols = 80): string {
   const info: string[] = [
     c("guest", "green", true) + c("@", "dim") + c("hlink", "green", true),
     c("─".repeat(11), "dim"),
-    field("OS", c("NixOS 26.05 (Yarara) aarch64", "text")),
-    field("Host", c("Apple MacBook Air (M1, 2020)", "text")),
-    field("Kernel", c("Linux 7.0.11", "text")),
+    // esther, the box serving the site: what its own fastfetch prints
+    // (hand-copied, so bump it when esther moves to a new NixOS)
+    field("OS", c("NixOS 26.11 (Zokor) x86_64", "text")),
+    field("Host", c("HP ProDesk 400 G4 SFF", "text")),
+    field("Kernel", c("Linux 6.18.60", "text")),
     field("Uptime", c(esc(uptime()), "text")),
     field("Shell", c(`josh ${JOSH_VERSION}`, "text")),
     field("Terminal", c("/dev/pts/0", "text")),
