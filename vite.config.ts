@@ -4,8 +4,12 @@ import vue from "@vitejs/plugin-vue";
 
 // The box "boots" at each release: fastfetch's Uptime and who's login time for
 // josef count from the latest tag's commit time, injected here at build time.
-// Fresh clone without tags (or no git at all) falls back to the build moment.
+// The nix build has no .git, so the flake passes that time in as
+// HLINK_RELEASE_TIME (unix seconds); otherwise git is asked. Fresh clone
+// without tags (or no git at all) falls back to the build moment.
 function releaseTime(): string {
+  const fromNix = Number(process.env.HLINK_RELEASE_TIME);
+  if (fromNix > 0) return new Date(fromNix * 1000).toISOString();
   try {
     const tag = execSync("git describe --tags --abbrev=0", { encoding: "utf8" }).trim();
     return execSync(`git log -1 --format=%cI ${tag}`, { encoding: "utf8" }).trim();

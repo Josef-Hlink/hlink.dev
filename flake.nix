@@ -28,6 +28,11 @@
 
           nodejs = pkgs.nodejs_24;
 
+          # The box "boots" at each release (fastfetch Uptime, `who`). The
+          # sandbox has no .git for vite to ask, so hand it the source's commit
+          # time; esther builds from the release tag, so that's the release.
+          HLINK_RELEASE_TIME = toString (self.lastModified or 0);
+
           # `npm run build` is vue-tsc --noEmit && vite build -> dist/.
           # Static files only, so drop the default node_modules install layout
           # and just publish dist.
