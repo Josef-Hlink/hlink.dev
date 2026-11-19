@@ -11,8 +11,9 @@ lower link passes over the upper on the left, under it on the right (180deg
 point symmetric). Strokes are flattened to plain paths with skia-pathops.
 
     LD_LIBRARY_PATH=$(nix build --no-link --print-out-paths nixpkgs#stdenv.cc.cc.lib)/lib \\
-      uv run --no-project --with skia-pathops python brand/mark.py
+      uv run --no-project --with skia-pathops python brand/mark.py [--bg C] [--h C] [--j C] [-o DIR]
 """
+import argparse
 from pathlib import Path
 
 import pathops
@@ -141,7 +142,7 @@ def fill(name, colour):
     return f'class="hlink-{name}" fill="{colour}"'
 
 
-def svg(shape, gap):
+def svg(shape, gap, bg_colour=BG, h_colour=H, j_colour=J):
     h, j = links(gap, shape)
     bg = (
         f'<circle cx="{C:g}" cy="{C:g}" r="{C:g}"'
@@ -150,21 +151,47 @@ def svg(shape, gap):
     )
     return (
         f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {SIZE} {SIZE}">'
-        f'{bg} {fill("bg", BG)}/>'
-        f'<path {fill("h", H)} d="{d(h)}"/>'
-        f'<path {fill("j", J)} d="{d(j)}"/>'
+        f'{bg} {fill("bg", bg_colour)}/>'
+        f'<path {fill("h", h_colour)} d="{d(h)}"/>'
+        f'<path {fill("j", j_colour)} d="{d(j)}"/>'
         "</svg>\n"
     )
 
 
-if __name__ == "__main__":
+def colour(value):
+    # anything SVG takes as a fill (#hex, rgb(), a name, `none`); just keep it
+    # from breaking out of the attribute
+    if any(c in value for c in '"<>&'):
+        raise argparse.ArgumentTypeError(f"not a colour: {value!r}")
+    return value
+
+
+def main():
+    p = argparse.ArgumentParser(
+        description="Write the hlink mark: tile + circle, master + small cut. "
+        "Without flags it regenerates the canonical brand/ files and public/favicon.svg.",
+    )
+    p.add_argument("--bg", type=colour, default=BG, help=f"background, `none` for transparent (default {BG})")
+    p.add_argument("--h", type=colour, default=H, help=f"the h (default {H})")
+    p.add_argument("--j", type=colour, default=J, help=f"the J (default {J})")
+    p.add_argument("-o", "--out", type=Path, help="write to this directory instead (required with custom colours)")
+    a = p.parse_args()
+
     here = Path(__file__).parent
-    for shape in ("tile", "circle"):
-        for suffix, gap in GAP.items():
-            out = here / f"hlink-{shape}{suffix}.svg"
-            out.write_text(svg(shape, gap))
-            print(out.relative_to(here.parent), out.stat().st_size, "bytes")
-    # hlink.dev's own favicon: the small cut, since tabs draw it at 16-32px
-    fav = here.parent / "public" / "favicon.svg"
-    fav.write_text(svg("tile", GAP["-small"]))
-    print(fav.relative_to(here.parent), fav.stat().st_size, "bytes")
+    custom = (a.bg, a.h, a.j) != (BG, H, J)
+    if custom and not a.out:
+        p.error("custom colours need --out: brand/ holds the canonical mark")
+    out_dir = a.out or here
+    out_dir.mkdir(parents=True, exist_ok=True)
+
+    files = [(out_dir / f"hlink-{shape}{suffix}.svg", shape, gap) for shape in ("tile", "circle") for suffix, gap in GAP.items()]
+    if not a.out:
+        # hlink.dev's own favicon: the small cut, since tabs draw it at 16-32px
+        files.append((here.parent / "public" / "favicon.svg", "tile", GAP["-small"]))
+    for path, shape, gap in files:
+        path.write_text(svg(shape, gap, a.bg, a.h, a.j))
+        print(path, path.stat().st_size, "bytes")
+
+
+if __name__ == "__main__":
+    main()
