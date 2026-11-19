@@ -4,7 +4,7 @@
 
 import { c } from "./util";
 
-export const JOSH_VERSION = "0.7.0";
+export const JOSH_VERSION = "1.0.0";
 
 interface Release {
   version: string;
@@ -14,6 +14,17 @@ interface Release {
 
 // newest first
 export const CHANGELOG: Release[] = [
+  {
+    version: "1.0.0",
+    date: "2026-11-19",
+    notes: [
+      "hlink has its own mark now: two chain links, standing as an H",
+      "the favicon and safari's tiles wear it",
+      "safari opens github repos in-window: readme, files, the language bar",
+      "fastfetch matches the box this actually runs on, snowflake in rgbcmy",
+      "uptime counts from the release now, not from whenever the box last rebuilt",
+    ],
+  },
   {
     version: "0.7.0",
     date: "2026-07-14",
