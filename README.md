@@ -18,7 +18,7 @@ browser, so the origin just serves files (and Cloudflare caches them at the edge
 
 ```sh
 npm install
-npm run dev      # http://localhost:5173
+npm run dev      # http://localhost:1408
 npm run build    # type-check + bundle to dist/
 npm run preview  # serve the built dist/ locally
 ```
