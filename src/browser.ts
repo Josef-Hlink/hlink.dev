@@ -1,5 +1,6 @@
 // The fake DNS Safari resolves against. This internet has a handful of known
-// hosts: klym renders live in the window, GitHub opens a real tab, and
+// hosts: klym renders live in the window, a GitHub repo gets a homemade page
+// (github.com refuses to be framed), the rest of GitHub opens a real tab, and
 // everything else lands on the toy not-found page. Shared with App.vue so the
 // shell's `open` can send external urls straight to a new tab without
 // bouncing through Safari.
@@ -7,6 +8,7 @@
 export type Target =
   | { kind: "start" }
   | { kind: "frame"; url: string; host: string } // rendered in the iframe
+  | { kind: "repo"; url: string; owner: string; name: string } // RepoPage
   | { kind: "external"; url: string } // real new tab
   | { kind: "notfound"; input: string; host: string }
   | { kind: "bottom" }; // the recursion floor (see SELF_HOSTS below)
@@ -51,7 +53,16 @@ export function resolveInput(raw: string): Target {
     url.protocol = "https:"; // these only speak https; URL.href also normalizes
     return { kind: "frame", url: url.href, host };
   }
-  if (EXTERNAL_HOSTS.has(host)) return { kind: "external", url: url.href };
+  if (EXTERNAL_HOSTS.has(host)) {
+    // a repo's front page (github.com/<owner>/<repo>) is drawn here from the
+    // API; anything deeper (a file, an issue, a profile) is the real site
+    const [owner, name, ...rest] = url.pathname.split("/").filter(Boolean);
+    if (owner && name && !rest.length) {
+      const repo = name.replace(/\.git$/, "");
+      return { kind: "repo", url: `https://github.com/${owner}/${repo}`, owner, name: repo };
+    }
+    return { kind: "external", url: url.href };
+  }
   if (START_HOSTS.has(host)) return { kind: "start" };
   return { kind: "notfound", input, host };
 }
@@ -70,6 +81,7 @@ export function frameSrc(url: string): string {
 export function samePage(a: Page, b: Page): boolean {
   if (a.kind !== b.kind) return false;
   if (a.kind === "frame" && b.kind === "frame") return a.url === b.url;
+  if (a.kind === "repo" && b.kind === "repo") return a.url.toLowerCase() === b.url.toLowerCase();
   if (a.kind === "notfound" && b.kind === "notfound") return a.input === b.input;
   return true; // two starts
 }

@@ -1,10 +1,11 @@
 <script setup lang="ts">
 // Safari: a toy browser over the tiny fake internet in browser.ts. The klym
-// showcase loads live in an iframe; other favorites are real links that open
-// new tabs. Owns its navigation state (like each Shell owns a cwd) and wraps
+// showcase loads live in an iframe; repositories get a homemade GitHub page
+// (RepoPage) since github.com refuses to be framed. Owns its navigation state (like each Shell owns a cwd) and wraps
 // its own DesktopWindow — the parent only manages z-order/focus/open-state.
 import { ref } from "vue";
 import DesktopWindow from "./DesktopWindow.vue";
+import RepoPage from "./RepoPage.vue";
 import { resolveInput, samePage, frameSrc, type Page } from "../browser";
 
 defineProps<{ z: number; focused: boolean }>();
@@ -25,7 +26,7 @@ let failTimer = 0;
 function syncAddress() {
   const p = page.value;
   address.value =
-    p.kind === "frame"
+    p.kind === "frame" || p.kind === "repo"
       ? p.url.replace(/^https:\/\//, "")
       : p.kind === "notfound"
         ? p.input
@@ -90,9 +91,10 @@ function goForward() {
   enterPage(p);
 }
 
-/** Escape hatch: the framed site, full-size in a real tab. */
+/** Escape hatch: the framed site (or the real repo page), in a real tab. */
 function popOut() {
-  if (page.value.kind === "frame") window.open(page.value.url, "_blank", "noopener");
+  const p = page.value;
+  if (p.kind === "frame" || p.kind === "repo") window.open(p.url, "_blank", "noopener");
 }
 
 /** Navigate from raw user input (address bar, a dial, or the shell's `open`). */
@@ -172,7 +174,7 @@ defineExpose({ navigateTo });
         <button
           class="finder-nav"
           aria-label="open in a real tab"
-          :disabled="page.kind !== 'frame'"
+          :disabled="page.kind !== 'frame' && page.kind !== 'repo'"
           @click="popOut"
         >
           <svg viewBox="0 0 12 12" width="12" height="12" aria-hidden="true">
@@ -198,7 +200,7 @@ defineExpose({ navigateTo });
     </template>
 
     <div class="safari-body">
-      <!-- start page: apps run live in here, repositories open real GitHub tabs.
+      <!-- start page: apps run live in here, repositories on a homemade GitHub page.
            filled colorful tile = app, blue outline tile = repo. -->
       <div v-if="page.kind === 'start'" class="safari-start">
         <div class="safari-start-head">Apps</div>
@@ -234,12 +236,7 @@ defineExpose({ navigateTo });
 
         <div class="safari-start-head">Repositories</div>
         <div class="safari-dials">
-          <a
-            class="safari-dial"
-            href="https://github.com/Josef-Hlink/klym"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
+          <button class="safari-dial" @click="navigateTo('github.com/Josef-Hlink/klym')">
             <span class="safari-tile">
               <!-- klym's outline mark (klym/branding/klym-logo-outline-*.svg),
                    stroked in the repo-tile blue -->
@@ -251,13 +248,8 @@ defineExpose({ navigateTo });
               </svg>
             </span>
             klym
-          </a>
-          <a
-            class="safari-dial"
-            href="https://github.com/Josef-Hlink/hlink.dev"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
+          </button>
+          <button class="safari-dial" @click="navigateTo('github.com/Josef-Hlink/hlink.dev')">
             <span class="safari-tile full">
               <!-- skeleton of the mark in the repo-tile blue, the source of
                    the app above it: the two links cut for over/under with no
@@ -284,13 +276,8 @@ defineExpose({ navigateTo });
               </svg>
             </span>
             hlink.dev
-          </a>
-          <a
-            class="safari-dial"
-            href="https://github.com/Josef-Hlink/twin"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
+          </button>
+          <button class="safari-dial" @click="navigateTo('github.com/Josef-Hlink/twin')">
             <span class="safari-tile">
               <!-- twin builds tmux sessions: a window split into panes -->
               <svg viewBox="0 0 34 34" aria-hidden="true">
@@ -301,7 +288,7 @@ defineExpose({ navigateTo });
               </svg>
             </span>
             twin
-          </a>
+          </button>
         </div>
         <p class="safari-start-hint">
           a small internet — the terminal's <code>open</code> command lands here too
@@ -331,6 +318,14 @@ defineExpose({ navigateTo });
           <button class="safari-err-btn" @click="reload">try again</button>
         </div>
       </template>
+
+      <!-- a repo's front page, drawn from GitHub's API -->
+      <RepoPage
+        v-else-if="page.kind === 'repo'"
+        :owner="page.owner"
+        :name="page.name"
+        :url="page.url"
+      />
 
       <!-- the recursion floor: a framed copy can't frame itself again -->
       <div v-else-if="page.kind === 'bottom'" class="safari-errpage">
